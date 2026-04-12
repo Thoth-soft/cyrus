@@ -11,6 +11,7 @@ import tempfile
 import threading
 import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
@@ -18,8 +19,11 @@ from unittest import mock
 from cyrus.storage import (
     FilelockTimeout,
     atomic_write,
+    dump_frontmatter,
     filelock,
     make_memory_path,
+    parse_frontmatter,
+    save_memory,
     slugify,
 )
 
@@ -198,6 +202,157 @@ class TestFilelock(_TempHomeMixin, unittest.TestCase):
             self.assertTrue(hasattr(s, "msvcrt") or "msvcrt" in sys.modules)
         else:
             self.assertTrue(hasattr(s, "fcntl") or "fcntl" in sys.modules)
+
+
+class TestParseFrontmatter(unittest.TestCase):
+    def test_no_frontmatter(self):
+        meta, body = parse_frontmatter("no fm here\nbody")
+        self.assertEqual(meta, {})
+        self.assertEqual(body, "no fm here\nbody")
+
+    def test_basic(self):
+        text = "---\nid: abc\ncategory: sessions\n---\nbody here"
+        meta, body = parse_frontmatter(text)
+        self.assertEqual(meta, {"id": "abc", "category": "sessions"})
+        self.assertEqual(body, "body here")
+
+    def test_integer(self):
+        meta, _ = parse_frontmatter("---\ncount: 42\n---\n")
+        self.assertEqual(meta, {"count": 42})
+
+    def test_booleans(self):
+        meta, _ = parse_frontmatter("---\na: true\nb: false\n---\n")
+        self.assertEqual(meta, {"a": True, "b": False})
+
+    def test_flow_list(self):
+        meta, _ = parse_frontmatter("---\ntags: [alpha, beta, gamma]\n---\n")
+        self.assertEqual(meta, {"tags": ["alpha", "beta", "gamma"]})
+
+    def test_iso_timestamp_preserved_as_string(self):
+        ts = "2026-04-13T10:00:00+00:00"
+        meta, _ = parse_frontmatter(f"---\ncreated: {ts}\n---\n")
+        self.assertEqual(meta["created"], ts)
+        self.assertIsInstance(meta["created"], str)
+
+    def test_unclosed_raises(self):
+        with self.assertRaises(ValueError):
+            parse_frontmatter("---\nid: abc\nno closing delim\n")
+
+    def test_crlf(self):
+        text = "---\r\nid: abc\r\n---\r\nbody"
+        meta, body = parse_frontmatter(text)
+        self.assertEqual(meta, {"id": "abc"})
+        self.assertEqual(body, "body")
+
+    def test_empty_body(self):
+        meta, body = parse_frontmatter("---\nid: abc\n---\n")
+        self.assertEqual(meta, {"id": "abc"})
+        self.assertEqual(body, "")
+
+    def test_quoted_string_with_colon(self):
+        meta, _ = parse_frontmatter('---\nurl: "https://example.com:8080"\n---\n')
+        self.assertEqual(meta, {"url": "https://example.com:8080"})
+
+
+class TestDumpFrontmatter(unittest.TestCase):
+    def test_keys_sorted(self):
+        out = dump_frontmatter({"b": 1, "a": 2}, "body")
+        lines = out.split("\n")
+        self.assertEqual(lines[0], "---")
+        self.assertTrue(lines[1].startswith("a:"))
+        self.assertTrue(lines[2].startswith("b:"))
+        self.assertEqual(lines[3], "---")
+
+    def test_delimiters(self):
+        out = dump_frontmatter({"x": 1}, "body")
+        self.assertTrue(out.startswith("---\n"))
+        self.assertIn("\n---\n", out)
+
+    def test_list_flow_style(self):
+        out = dump_frontmatter({"tags": ["a", "b"]}, "")
+        self.assertIn("tags: [a, b]", out)
+
+    def test_nested_raises(self):
+        with self.assertRaises(ValueError):
+            dump_frontmatter({"nested": {"a": 1}}, "body")
+
+    def test_round_trip(self):
+        m = {"id": "abc", "category": "sessions", "tags": ["x", "y"], "count": 3, "active": True}
+        body = "hello world"
+        out = dump_frontmatter(m, body)
+        m2, body2 = parse_frontmatter(out)
+        self.assertEqual(m2, m)
+        self.assertEqual(body2, body)
+
+
+class TestSaveMemory(_TempHomeMixin, unittest.TestCase):
+    def test_creates_file(self):
+        p = save_memory("sessions", "hello world", title="My Note")
+        self.assertTrue(p.exists())
+        self.assertEqual(p.parent.name, "sessions")
+        self.assertIn("_my-note.md", p.name)
+
+    def test_frontmatter_fields(self):
+        p = save_memory("decisions", "body text", title="X", tags=["a"], source="cli")
+        meta, body = parse_frontmatter(p.read_text(encoding="utf-8"))
+        self.assertEqual(meta["category"], "decisions")
+        self.assertIn("id", meta)
+        self.assertIn("created", meta)
+        self.assertIn("updated", meta)
+        self.assertEqual(meta["tags"], ["a"])
+        self.assertEqual(meta["source"], "cli")
+        self.assertEqual(body, "body text")
+
+    def test_invalid_category(self):
+        with self.assertRaises(ValueError):
+            save_memory("garbage", "x")
+
+    def test_cyrus_home_respected(self):
+        p = save_memory("rules", "content", title="Rule X")
+        self.assertTrue(str(p).startswith(self._tmp))
+
+
+class TestConcurrentWrites(_TempHomeMixin, unittest.TestCase):
+    """STORE-07: 100 parallel writes produce zero corruption."""
+
+    def test_100_parallel_save_memory(self):
+        n = 100
+
+        def worker(i: int) -> Path:
+            return save_memory("sessions", f"content-{i}", title=f"Note {i}")
+
+        with ThreadPoolExecutor(max_workers=20) as ex:
+            paths = list(ex.map(worker, range(n)))
+
+        # All paths unique
+        self.assertEqual(len(set(paths)), n)
+        # All files exist and parse
+        for p in paths:
+            self.assertTrue(p.exists())
+            meta, body = parse_frontmatter(p.read_text(encoding="utf-8"))
+            self.assertEqual(meta["category"], "sessions")
+            self.assertTrue(body.startswith("content-"))
+
+    def test_100_parallel_same_file(self):
+        # All writers race on ONE target path — final file must be exactly
+        # one writer's content, never interleaved.
+        target = Path(self._tmp) / "shared.md"
+        expected_bodies = {f"writer-{i}-payload-{'x' * 100}" for i in range(100)}
+
+        def worker(i: int) -> None:
+            payload = f"writer-{i}-payload-{'x' * 100}"
+            with filelock(target, timeout=10.0):
+                atomic_write(target, payload)
+
+        with ThreadPoolExecutor(max_workers=20) as ex:
+            futures = [ex.submit(worker, i) for i in range(100)]
+            for f in as_completed(futures):
+                f.result()  # surface any exception
+
+        final = target.read_text(encoding="utf-8")
+        # Final content MUST match exactly one of the 100 expected payloads —
+        # no interleaving, no partial bytes.
+        self.assertIn(final, expected_bodies)
 
 
 if __name__ == "__main__":
