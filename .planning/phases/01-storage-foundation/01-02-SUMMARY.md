@@ -122,6 +122,8 @@ Parser/dumper handle only this subset (everything else rejected with ValueError)
 3. **Task 2 RED: failing tests for frontmatter + save_memory + stress** — `e226178` (test)
 4. **Task 2 GREEN: parse_frontmatter, dump_frontmatter, save_memory** — `d928aec` (feat)
 5. **Task 3: verification only — no commit** (full suite ran, smoke test passed, pyproject.toml diff empty)
+6. **Plan metadata: SUMMARY.md + STATE.md + REQUIREMENTS.md** — `d1bf76e` (docs)
+7. **Post-push fix: path-resolution robustness in one test** — `efc25f3` (fix, Rule 1 deviation)
 
 ## Files Created/Modified
 - `src/cyrus/storage.py` — 386 lines, entire public storage API
@@ -145,11 +147,27 @@ All decisions were specified in 01-CONTEXT.md or the plan's `<action>` block. No
 
 ## Deviations from Plan
 
-None — plan executed exactly as written. The interface block, test specifications, and implementation sketch in `<action>` were followed verbatim. No auto-fixes, no blocking issues, no architectural surprises.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Made `test_cyrus_home_respected` robust to path resolution**
+- **Found during:** Post-push CI verification (Task 3 follow-up)
+- **Issue:** The test used `str(p).startswith(self._tmp)` to verify files land under the CYRUS_HOME tempdir. On Linux this worked, but CI failed on macOS and Windows:
+  - **macOS:** `tempfile.mkdtemp()` returns `/var/folders/...` but `cyrus_home()` calls `.resolve()` which rewrites `/var` → `/private/var`, so the raw string comparison fails.
+  - **Windows:** short-name / casing normalization can diverge between the tempdir string and the resolved path.
+  - Failed cells: macOS 3.11/3.13, Windows 3.11/3.12/3.13 (5 of 9).
+- **Fix:** Replaced the raw-string comparison with `p.resolve().is_relative_to(Path(self._tmp).resolve())`, which is the real invariant we wanted to assert.
+- **Files modified:** `tests/test_storage.py`
+- **Verification:** All 9 CI matrix cells green on run `24318207975` after the fix.
+- **Committed in:** `efc25f3` (standalone fix commit, after `d1bf76e` plan-docs commit)
+
+---
+
+**Total deviations:** 1 auto-fixed (Rule 1 bug — flaky test expectation, production code unchanged)
+**Impact on plan:** None. Production code in `cyrus.storage` is byte-identical to what Task 2 shipped. The deviation was discovered only because the plan mandated "push and let CI prove cross-platform correctness" — exactly the control the plan intended.
 
 ## Issues Encountered
 
-None. All 43 tests passed on first GREEN run for each task — no iteration needed.
+- Initial local run (Windows 11) passed all 43 tests, masking the cross-platform issue in `test_cyrus_home_respected` (the test was logically close-enough on Windows but not bulletproof). CI caught it on all non-local cells. One 8-line patch resolved all 5 failing cells with no changes to `src/cyrus/storage.py`.
 
 ## User Setup Required
 
