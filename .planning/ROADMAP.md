@@ -63,7 +63,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 02-01-PLAN.md — Core search: _searchutil helpers + public search() API with filters, scoring, snippet extraction, and ReDoS guard (SEARCH-01/02/03/04/06)
-- [ ] 02-02-PLAN.md — Deterministic 10k-file corpus generator + CYRUS_BENCH-gated p95<500ms benchmark (SEARCH-05)
+- [x] 02-02-PLAN.md — Deterministic 10k-file corpus generator + CYRUS_BENCH-gated p95<500ms benchmark (SEARCH-05)
 **UI hint**: no
 
 ### Phase 3: Rules Engine

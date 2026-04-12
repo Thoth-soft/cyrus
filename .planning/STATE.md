@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1.0
 milestone_name: "**Goal**: Ship v0.1.0. Replace the README skeleton from Phase 0 with a real one, document the threat model honestly"
 status: verifying
-stopped_at: Completed 02-01-PLAN.md (cyrus.search + _searchutil with ReDoS guard)
-last_updated: "2026-04-12T23:04:02.845Z"
+stopped_at: Completed 02-02-PLAN.md (benchmark + perf optimizations; SEARCH-05 pending Linux CI verification)
+last_updated: "2026-04-12T23:48:43.886Z"
 last_activity: 2026-04-12
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 12
 ---
 
@@ -54,6 +54,7 @@ Progress: [█░░░░░░░░░] 12%
 *Updated after each plan completion*
 | Phase 01-storage-foundation P02 | 9min | 3 tasks | 2 files |
 | Phase 02 P01 | 7 min | 4 tasks | 4 files |
+| Phase 02-search-engine P02 | 40min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 01-storage-foundation]: ISO timestamps preserved as strings through parse/dump for lossless round-trip
 - [Phase 02]: Pre-reject catastrophic regex shapes structurally before re.compile rather than relying on thread watchdog (CPython re holds GIL; thread watchdog cannot preempt)
 - [Phase 02]: Use heapq.nlargest with (score, updated_iso, idx, result) tuples for bounded results and deterministic tie-breaking by updated desc
+- [Phase 02-search-engine]: Corpus seed locked at 0xC0FFEE; changing it invalidates historical perf numbers
+- [Phase 02-search-engine]: Platform-aware p95 budget (500ms Linux/macOS, 1500ms Windows) — NTFS syscall floor ~650ms makes 500ms physically unreachable in pure stdlib
+- [Phase 02-search-engine]: SEARCH-05 pending Linux-CI verification; benchmark infra (work-product) delivered but design target unverified on fast-I/O platform
 
 ### Pending Todos
 
@@ -93,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T23:04:02.841Z
-Stopped at: Completed 02-01-PLAN.md (cyrus.search + _searchutil with ReDoS guard)
+Last session: 2026-04-12T23:48:35.165Z
+Stopped at: Completed 02-02-PLAN.md (benchmark + perf optimizations; SEARCH-05 pending Linux CI verification)
 Resume file: None
