@@ -7,9 +7,9 @@ Strategy: fresh repo
 
 | Repo | Source | Branch | Strategy |
 |------|--------|--------|----------|
-| cortex | (new) | main | fresh init |
+| cyrus | (new) | main | fresh init |
 
 ## Notes
 
-Building Cortex — a simple, zero-dependency AI memory system.
+Building Cyrus — a simple, zero-dependency AI memory system.
 Plain markdown files, MCP server, auto-save hook. The anti-MemPalace.

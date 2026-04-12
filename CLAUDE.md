@@ -1,11 +1,11 @@
 <!-- GSD:project-start source:PROJECT.md -->
 ## Project
 
-**Cortex**
+**Cyrus**
 
-Cortex is a zero-dependency AI memory system for developers using Claude Code, Cursor, and other MCP-compatible AI tools. It gives your AI persistent memory across sessions — conversations, decisions, preferences — stored as plain markdown files you can read, grep, git-track, and edit by hand. The anti-MemPalace: same core value proposition, 1% of the complexity.
+Cyrus is a zero-dependency AI memory system for developers using Claude Code, Cursor, and other MCP-compatible AI tools. It gives your AI persistent memory across sessions — conversations, decisions, preferences — stored as plain markdown files you can read, grep, git-track, and edit by hand. The anti-MemPalace: same core value proposition, 1% of the complexity.
 
-**Core Value:** **The AI actually follows rules you give it.** Rules enforcement is enforced at the system level via PreToolUse hooks, not relying on the AI to "remember." Memory + enforcement in one system. If this works and nothing else does, Cortex succeeds.
+**Core Value:** **The AI actually follows rules you give it.** Rules enforcement is enforced at the system level via PreToolUse hooks, not relying on the AI to "remember." Memory + enforcement in one system. If this works and nothing else does, Cyrus succeeds.
 
 ### Constraints
 
@@ -34,18 +34,18 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 |---|---|---|---|
 | **Python interpreter** | **3.10+** (target 3.11 for testing) | Runtime | 3.9 reached EOL Oct 2025 — unsafe for new projects. 3.10 is the lowest version that is still receiving security patches as of 2026-04. 3.10 adds `match` statements, better error messages, and `X \| Y` union syntax that we will use. If we go to 3.11 we get `tomllib` for free but we don't need it. |
 | **JSON-RPC 2.0 over stdio** | MCP `2025-11-25` (primary), also accept `2024-11-05` | Wire protocol with Claude Code | Confirmed: Claude Code sends `"protocolVersion": "2025-11-25"` in the `initialize` request as of 2026-02+. MCP spec requires the server to echo the same version back if supported, or offer its own. Line-delimited JSON — NOT Content-Length framed (LSP-style). One JSON object per line on stdin/stdout, no length prefix. |
-| **`pyproject.toml` + `hatchling`** | hatchling 1.x | Build backend | PEP 621 metadata, single source of truth, no `setup.py`. Hatchling is PyPA-maintained (same umbrella as setuptools) and is the default uv/modern recommendation. Zero runtime dependencies — `hatchling` is only required at build time, not install time. End users install with `pip install cortex-memory` and pull zero transitive deps. |
+| **`pyproject.toml` + `hatchling`** | hatchling 1.x | Build backend | PEP 621 metadata, single source of truth, no `setup.py`. Hatchling is PyPA-maintained (same umbrella as setuptools) and is the default uv/modern recommendation. Zero runtime dependencies — `hatchling` is only required at build time, not install time. End users install with `pip install cyrus-memory` and pull zero transitive deps. |
 | **Plain markdown files on disk** | — | Storage | Grep-searchable, git-trackable, human-readable, zero lock-in. Per PROJECT.md constraint. |
 ### Python Standard Library Modules Used
-| Module | Purpose in Cortex | Why this over alternatives |
+| Module | Purpose in Cyrus | Why this over alternatives |
 |---|---|---|
 | **`json`** | Parse/serialize every MCP and hook message | Only JSON library we need. `json.loads()` / `json.dumps(..., ensure_ascii=False)` for UTF-8 friendliness. |
 | **`sys`** | `sys.stdin`, `sys.stdout`, `sys.stderr`, `sys.argv`, `sys.exit()` | The stdio loop reads `sys.stdin` line-by-line and writes to `sys.stdout`. All logs go to `sys.stderr` — **stdout is reserved for protocol messages only**. |
-| **`pathlib`** | All filesystem path handling | Use `pathlib.Path` everywhere, never `os.path`. Use `Path.as_posix()` when serializing paths into JSON responses — Windows backslashes in JSON are legal but confuse cross-platform clients and grep. Use `Path.home()` for `~/.cortex/`. |
-| **`os`** | `os.environ` only (for `CORTEX_DIR` override), `os.fsync()` for durable writes | `os.path` is banned in Cortex code — always use `pathlib`. |
+| **`pathlib`** | All filesystem path handling | Use `pathlib.Path` everywhere, never `os.path`. Use `Path.as_posix()` when serializing paths into JSON responses — Windows backslashes in JSON are legal but confuse cross-platform clients and grep. Use `Path.home()` for `~/.cyrus/`. |
+| **`os`** | `os.environ` only (for `CORTEX_DIR` override), `os.fsync()` for durable writes | `os.path` is banned in Cyrus code — always use `pathlib`. |
 | **`re`** | Grep engine (regex-based search across markdown files) | Stdlib `re` is fast enough for 10k files. For fixed-string search, use `str.__contains__` instead for speed. `re.IGNORECASE` flag for case-insensitive search. |
-| **`subprocess`** | None in MCP server. Used in hook script only if shelling out (we won't). | Cortex hooks are pure Python scripts invoked by Claude Code — we do not spawn subprocesses ourselves. |
-| **`argparse`** | `cortex init`, `cortex serve`, `cortex add-rule` CLI | Stdlib CLI parser. Enough for our 4-6 subcommands. No `click` or `typer`. |
+| **`subprocess`** | None in MCP server. Used in hook script only if shelling out (we won't). | Cyrus hooks are pure Python scripts invoked by Claude Code — we do not spawn subprocesses ourselves. |
+| **`argparse`** | `cyrus init`, `cyrus serve`, `cyrus add-rule` CLI | Stdlib CLI parser. Enough for our 4-6 subcommands. No `click` or `typer`. |
 | **`datetime`** | Memory timestamps, ISO 8601 serialization | `datetime.now(timezone.utc).isoformat()` for file frontmatter. |
 | **`uuid`** | Memory file IDs / filenames | `uuid.uuid4().hex[:8]` for short slugs appended to filenames. |
 | **`hashlib`** | Rule ID stable hashing (SHA1 short hash of rule text) | Deterministic IDs so the same rule text always produces the same rule ID. |
@@ -59,7 +59,7 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 | **`traceback`** | Format exceptions for stderr logging without crashing the stdio loop | Never let a tool handler exception kill the server. |
 | **`platform`** | Detect Windows for the `cmd /c` install-hint and stdio reconfiguration | `platform.system() == "Windows"`. |
 - `asyncio` — the MCP stdio loop is inherently single-threaded request/response. Sync code with a blocking `for line in sys.stdin:` loop is simpler, shorter, and avoids the Windows asyncio issues that plague the official python-sdk (see modelcontextprotocol/python-sdk#552 — Windows 11 hangs indefinitely with asyncio-based stdio).
-- `tomllib` — we have no TOML to parse at runtime. `pyproject.toml` is only read by the build tool, not by Cortex itself.
+- `tomllib` — we have no TOML to parse at runtime. `pyproject.toml` is only read by the build tool, not by Cyrus itself.
 - `os.path` — `pathlib` covers every case. Banning `os.path` in the codebase prevents the backslash-in-JSON bug class entirely.
 - `sqlite3` — tempting for indexing, but violates "plain markdown files" constraint. Grep is fast enough per PROJECT.md.
 ### Development Tools
@@ -77,15 +77,15 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 - Echo the exact `protocolVersion` the client sent, if it's in our supported set `{"2025-11-25", "2025-03-26", "2024-11-05"}`. Otherwise respond with `"2025-11-25"` and let the client decide to disconnect.
 - `capabilities.tools` is present (we have tools); set `listChanged: false` in v1 (we don't send dynamic updates).
 - Do NOT advertise `resources`, `prompts`, `logging`, `sampling`, `tasks`, `elicitation`, or `experimental`. Tools only.
-- `serverInfo.version` is populated from `importlib.metadata.version("cortex-memory")`.
+- `serverInfo.version` is populated from `importlib.metadata.version("cyrus-memory")`.
 ### 3. Initialized notification (client → server, no response)
 ### 4. tools/list
 ### 5. tools/call
 ## PreToolUse Hook Specifics (HIGH confidence — verified against docs.claude.com/hooks)
-### 1. Configuration (Cortex writes to `~/.claude/settings.json` during `cortex init`)
-- `matcher: "*"` to match every tool call — Cortex rules may apply to any tool, not just Bash.
+### 1. Configuration (Cyrus writes to `~/.claude/settings.json` during `cyrus init`)
+- `matcher: "*"` to match every tool call — Cyrus rules may apply to any tool, not just Bash.
 - `type: "command"` — the only type we use.
-- `command: "python -m cortex.hooks.pretool"` — invokes the hook as a Python module, so it works regardless of install path. On Windows this works as-is because Python is on PATH. (No `cmd /c` needed for `python` specifically — that's only for `npx`.)
+- `command: "python -m cyrus.hooks.pretool"` — invokes the hook as a Python module, so it works regardless of install path. On Windows this works as-is because Python is on PATH. (No `cmd /c` needed for `python` specifically — that's only for `npx`.)
 ### 2. Hook input (Claude Code → hook stdin, single JSON line)
 ### 3. Hook output (hook stdout → Claude Code)
 ### 4. Decision field values
@@ -104,10 +104,10 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 ## Packaging (`pyproject.toml`)
 ### Minimum viable `pyproject.toml`
 # CRITICAL: NO dependencies key at all. Zero pip deps.
-- **No `[project.dependencies]` key.** Hatchling defaults to empty. Users run `pip install cortex-memory` and get zero transitive installs — MemPalace's 60+ deps nightmare is structurally impossible.
+- **No `[project.dependencies]` key.** Hatchling defaults to empty. Users run `pip install cyrus-memory` and get zero transitive installs — MemPalace's 60+ deps nightmare is structurally impossible.
 - **`requires-python = ">=3.10"`** — overrides PROJECT.md's 3.9+ constraint because 3.9 is EOL and shipping a new 2026 project on an EOL runtime is irresponsible. Still widely available: macOS Homebrew ships 3.12, Ubuntu 22.04 LTS ships 3.10, Windows Store ships 3.12, `pyenv` covers anyone stuck behind.
-- **`packages = ["src/cortex"]`** — use the `src/` layout. Prevents accidentally importing from the working directory instead of the installed package during testing (a classic packaging footgun).
-- **`[project.scripts] cortex = "cortex.cli:main"`** — creates a `cortex` executable on PATH. Pip handles cross-platform shim creation (including `cortex.exe` on Windows).
+- **`packages = ["src/cyrus"]`** — use the `src/` layout. Prevents accidentally importing from the working directory instead of the installed package during testing (a classic packaging footgun).
+- **`[project.scripts] cyrus = "cyrus.cli:main"`** — creates a `cyrus` executable on PATH. Pip handles cross-platform shim creation (including `cyrus.exe` on Windows).
 ### Including the hook script as package data
 ### Directory layout
 ## Testing Strategy (stdlib only)
@@ -117,12 +117,12 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 ### Rule 1: `pathlib.Path` everywhere, `os.path` banned
 ### Rule 2: Always serialize paths with `.as_posix()` in JSON responses
 # BAD — produces "C:\\Users\\mohab\\.cortex\\memories\\foo.md" on Windows
-# GOOD — produces "C:/Users/mohab/.cortex/memories/foo.md" on Windows
+# GOOD — produces "C:/Users/mohab/.cyrus/memories/foo.md" on Windows
 ### Rule 3: Base directory resolution
 ### Rule 4: Atomic writes via `tempfile` + `shutil.move`
 ### Rule 5: Windows UTF-8 stdin/stdout
 ## Alternatives Considered
-| Recommended | Alternative | When to Use Alternative | Why Not for Cortex |
+| Recommended | Alternative | When to Use Alternative | Why Not for Cyrus |
 |---|---|---|---|
 | **hatchling** | setuptools | Existing projects with `setup.py` | Both work fine for pure-Python, but hatchling has cleaner defaults, no legacy cruft, and is what `uv init` generates. For a greenfield project in 2026 there's no reason to choose setuptools. |
 | **hatchling** | poetry | Apps with complex lockfile/dep needs | Poetry requires users to install poetry itself — we want `pip install` to Just Work. Poetry's `pyproject.toml` schema is also non-standard (pre-PEP 621). |
@@ -130,7 +130,7 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 | **`unittest`** | pytest | Projects where a better DSL matters more than zero-deps | pytest is nicer to write, but adds a test dependency. Since `unittest` ships with Python and we're disciplined about zero deps, unittest wins. Subclass `unittest.TestCase`, use `assertEqual` — it's verbose but fine. |
 | **Sync stdio loop** | asyncio / anyio | Servers with concurrent long-running operations | MCP stdio is strictly serial request/response. The official `mcp` SDK uses anyio and has documented Windows 11 hangs (modelcontextprotocol/python-sdk#552). Sync is simpler AND more reliable here. |
 | **`re` for search** | `sqlite3` FTS5 | 100k+ memory files | Grep is fine for 10k files per PROJECT.md. SQLite adds zero pip deps (stdlib) but adds an index to maintain, a schema to migrate, and breaks the "plain markdown files users can edit by hand" promise. Revisit only if grep ever gets slow. |
-| **Plain Python hook module** | Shell script / batch file | Simple one-liners | Cross-platform nightmare. Shebangs don't work on Windows. Batch files don't work on macOS. `python -m cortex.hooks.pretool` works everywhere Python is installed, which is exactly our runtime requirement anyway. |
+| **Plain Python hook module** | Shell script / batch file | Simple one-liners | Cross-platform nightmare. Shebangs don't work on Windows. Batch files don't work on macOS. `python -m cyrus.hooks.pretool` works everywhere Python is installed, which is exactly our runtime requirement anyway. |
 | **Negotiate `2025-11-25`** | Hardcode `2024-11-05` | Pinning to a specific old client | Claude Code as of 2026-02+ sends `2025-11-25`. Echo back whatever the client sends (if known) for forward/backward compatibility. Supporting multiple versions is trivial — it's just a set membership check. |
 ## What NOT to Use
 | Avoid | Why | Use Instead |
@@ -143,7 +143,7 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 | **`click` / `typer`** | Both violate zero-deps. `typer` pulls `pydantic` indirectly. | `argparse` — stdlib, does everything we need for 4-6 subcommands. |
 | **`httpx` / `requests`** | We never make HTTP calls. The MCP transport is stdio. | N/A — delete any HTTP code. |
 | **`rich` / `colorama`** | Pretty terminal output isn't worth a dep. | Plain `print` to stderr. The CLI is for debugging, not beauty. |
-| **`tomli` / `tomlkit`** | Would let us parse TOML on 3.10. We don't read any TOML at runtime — `pyproject.toml` is a build-tool concern. | Nothing. Delete the config-loading TOML idea if it comes up. Use JSON for any user config file (`~/.cortex/config.json`). |
+| **`tomli` / `tomlkit`** | Would let us parse TOML on 3.10. We don't read any TOML at runtime — `pyproject.toml` is a build-tool concern. | Nothing. Delete the config-loading TOML idea if it comes up. Use JSON for any user config file (`~/.cyrus/config.json`). |
 | **`watchdog`** | For file-change notifications. We don't need them — we re-read rules on each hook invocation. | Re-read on demand. Hooks fire at most a few times per second. |
 | **`msgpack` / `orjson`** | Faster JSON. stdlib `json` is fast enough for line-oriented protocol messages. | `json` + `json.loads(ensure_ascii=False)`. |
 | **`pytest`** | Adds a test-time dep. Tempting because the DX is nicer. | `unittest` + `python -m unittest discover`. |
@@ -154,15 +154,15 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 | **Async `asyncio.run()` stdio loop** | Works on Linux/macOS. Known to hang on Windows 11 (python-sdk#552). | Plain sync `for line in sys.stdin:` loop. |
 | **Spawning a shell in the hook** | `subprocess.run("rm ...", shell=True)` in a security-enforcement hook is a comically bad idea. | Pure Python rule evaluation. Never shell out from the hook. |
 ## Stack Patterns by Variant
-- Everything works. Use `Path.home() / ".cortex"` (no `Path.home().joinpath()` edge case), skip any 3.11-only syntax like exception groups.
+- Everything works. Use `Path.home() / ".cyrus"` (no `Path.home().joinpath()` edge case), skip any 3.11-only syntax like exception groups.
 - `match` statements from 3.10 are fine to use for dispatching on `method` in the stdio loop.
 - Nothing extra to do. The codebase will run unchanged. Optionally use `type` statement syntax for aliases, but it's not necessary.
 - `tomllib` is available if we ever want to parse `pyproject.toml` for something, but we don't.
 - The `io.TextIOWrapper` wrap is mandatory for stdin/stdout/stderr (see Cross-Platform section).
-- Tell users who install via `pip` that `cortex.exe` will be on PATH via pip's script shim.
-- For the `.mcp.json` / `claude mcp add` command, use `claude mcp add --transport stdio cortex -- cortex serve` — no `cmd /c` needed since Python scripts get proper `.exe` shims. (The `cmd /c` requirement only applies to `npx`-based servers.)
+- Tell users who install via `pip` that `cyrus.exe` will be on PATH via pip's script shim.
+- For the `.mcp.json` / `claude mcp add` command, use `claude mcp add --transport stdio cyrus -- cyrus serve` — no `cmd /c` needed since Python scripts get proper `.exe` shims. (The `cmd /c` requirement only applies to `npx`-based servers.)
 - Recommend `pipx install cortex-memory` or `pip install --user cortex-memory` to avoid `externally-managed-environment` errors on newer Pythons. Document in README.
-- `~/.cortex/memories/` is a plain directory of markdown files — `git init` it and go. Cortex should not try to be a VCS itself, just be friendly to git (no binary files, deterministic ordering, line-based content).
+- `~/.cyrus/memories/` is a plain directory of markdown files — `git init` it and go. Cyrus should not try to be a VCS itself, just be friendly to git (no binary files, deterministic ordering, line-based content).
 ## Version Compatibility Matrix
 | Component | Version | Compatible With | Notes |
 |---|---|---|---|
@@ -181,7 +181,7 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 - On Windows, running through `python` launcher (`py -3`) vs direct `python.exe` — script shims created by pip work with both, no action needed.
 ## Installation (end user experience)
 # The entire install is one line. No compilers, no native code, no model downloads.
-# First-time setup: creates ~/.cortex/, registers the PreToolUse hook in ~/.claude/settings.json
+# First-time setup: creates ~/.cyrus/, registers the PreToolUse hook in ~/.claude/settings.json
 # Register as an MCP server with Claude Code
 # Verify
 ## Sources
@@ -217,7 +217,7 @@ Cortex is a zero-dependency AI memory system for developers using Claude Code, C
 | hatchling as build backend | **HIGH** | Official PyPA docs, uv docs, and Hatch docs all corroborate. |
 | Sync-over-async stdio loop | **MEDIUM** | Based on python-sdk#552 Windows hangs plus general reasoning about stdio serialization. We don't have a formal Anthropic statement, but the evidence is strong. |
 | `as_posix()` path serialization rule | **MEDIUM** | Best-practice from pathlib docs. Not a formal MCP requirement, but avoids a class of Windows rendering bugs. |
-| Exact `io.TextIOWrapper` invocation for Windows stdio | **MEDIUM** | Based on PEP 528 analysis and MCP filesystem #2098 (German umlaut) bug report. Tested pattern in my own Python code, but not verified against a Cortex implementation (doesn't exist yet). |
+| Exact `io.TextIOWrapper` invocation for Windows stdio | **MEDIUM** | Based on PEP 528 analysis and MCP filesystem #2098 (German umlaut) bug report. Tested pattern in my own Python code, but not verified against a Cyrus implementation (doesn't exist yet). |
 <!-- GSD:stack-end -->
 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->

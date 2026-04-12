@@ -42,7 +42,7 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Phase 0]: Two blockers must be resolved before any code is written: (a) pick a real PyPI name from the available shortlist (`cortex-cc`, `cortex-hook`, `cortex-rules`, or rename); (b) bump Python minimum from 3.9 to 3.11 (3.9 EOL Oct 2025).
+- [Phase 0]: Two blockers must be resolved before any code is written: (a) pick a real PyPI name from the available shortlist (`cyrus-cc`, `cyrus-hook`, `cyrus-rules`, or rename); (b) bump Python minimum from 3.9 to 3.11 (3.9 EOL Oct 2025).
 - [Roadmap]: Hook ships in Phase 4, before the MCP server in Phase 5. The hook is the differentiator and must be dogfooded early — failing here saves the whole project.
 - [Roadmap]: Phase 0 is a non-code decision gate. Success criteria are "decisions logged + names reserved + scaffolding exists," not "tests pass."
 
@@ -56,10 +56,10 @@ None yet.
 
 [Issues that affect future work]
 
-- **Phase 0 blocker — PyPI name conflict**: `cortex` and 7+ variants are taken. Must pick from shortlist before any public commitment.
+- **Phase 0 blocker — PyPI name conflict**: `cyrus` and 7+ variants are taken. Must pick from shortlist before any public commitment.
 - **Phase 0 blocker — Python 3.9 EOL**: PROJECT.md says 3.9+ but 3.9 is end-of-life. Bump minimum to 3.11.
-- **Phase 4 hard CI gate (deferred to Phase 4)**: `cortex hook bench` must hit p50 < 50ms and p95 < 150ms on Windows, macOS, and Linux. If Windows cold-start blows the budget, the project pivots or dies.
-- **Phase 5 hard CI lint gate (deferred to Phase 5)**: `grep -r 'print(' src/cortex/server.py src/cortex/tools.py` must return zero results.
+- **Phase 4 hard CI gate (deferred to Phase 4)**: `cyrus hook bench` must hit p50 < 50ms and p95 < 150ms on Windows, macOS, and Linux. If Windows cold-start blows the budget, the project pivots or dies.
+- **Phase 5 hard CI lint gate (deferred to Phase 5)**: `grep -r 'print(' src/cyrus/server.py src/cyrus/tools.py` must return zero results.
 - **Phase 6 hard release gate (deferred to Phase 6)**: Fresh-VM install test on Windows + macOS + Linux must succeed end-to-end with no manual fixups.
 
 ## Session Continuity
