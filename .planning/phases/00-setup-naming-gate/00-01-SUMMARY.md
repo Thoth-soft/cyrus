@@ -1,7 +1,7 @@
 ---
 phase: 00-setup-naming-gate
 plan: 01
-status: partial
+status: complete
 date: 2026-04-13
 ---
 
