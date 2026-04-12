@@ -62,7 +62,7 @@ Plans:
   4. The 10k-file synthetic benchmark runs in CI and asserts p95 search latency under 500ms on warm cache. The benchmark data is checked in or generated deterministically from a seed.
 **Plans**: 2 plans
 Plans:
-- [ ] 02-01-PLAN.md — Core search: _searchutil helpers + public search() API with filters, scoring, snippet extraction, and ReDoS guard (SEARCH-01/02/03/04/06)
+- [x] 02-01-PLAN.md — Core search: _searchutil helpers + public search() API with filters, scoring, snippet extraction, and ReDoS guard (SEARCH-01/02/03/04/06)
 - [ ] 02-02-PLAN.md — Deterministic 10k-file corpus generator + CYRUS_BENCH-gated p95<500ms benchmark (SEARCH-05)
 **UI hint**: no
 

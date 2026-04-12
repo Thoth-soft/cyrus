@@ -28,12 +28,12 @@
 
 ### Search (SEARCH)
 
-- [ ] **SEARCH-01**: Full-text search over all memory files using `re.compile` + `os.walk`. No external search dependencies.
-- [ ] **SEARCH-02**: Search results ranked by score: term frequency × recency decay × filename match bonus.
-- [ ] **SEARCH-03**: Results include snippet extraction (matched line ± context) for top-N hits only, not full file content.
-- [ ] **SEARCH-04**: Regex timeout guard prevents ReDoS on malicious queries (subprocess or signal-based watchdog).
+- [x] **SEARCH-01**: Full-text search over all memory files using `re.compile` + `os.walk`. No external search dependencies.
+- [x] **SEARCH-02**: Search results ranked by score: term frequency × recency decay × filename match bonus.
+- [x] **SEARCH-03**: Results include snippet extraction (matched line ± context) for top-N hits only, not full file content.
+- [x] **SEARCH-04**: Regex timeout guard prevents ReDoS on malicious queries (subprocess or signal-based watchdog).
 - [ ] **SEARCH-05**: Benchmark: 10,000 generated markdown files, p95 search latency under 500ms warm cache on mid-range laptop.
-- [ ] **SEARCH-06**: Supports filtering by category (`category=rules`), date range, and tags via optional query parameters.
+- [x] **SEARCH-06**: Supports filtering by category (`category=rules`), date range, and tags via optional query parameters.
 
 ### Rules Engine (RULES)
 
@@ -142,12 +142,12 @@
 | STORE-05 | Phase 1 | Complete |
 | STORE-06 | Phase 1 / 01-01 | Complete (2026-04-12) |
 | STORE-07 | Phase 1 | Complete |
-| SEARCH-01 | Phase 2 | Pending |
-| SEARCH-02 | Phase 2 | Pending |
-| SEARCH-03 | Phase 2 | Pending |
-| SEARCH-04 | Phase 2 | Pending |
+| SEARCH-01 | Phase 2 | Complete |
+| SEARCH-02 | Phase 2 | Complete |
+| SEARCH-03 | Phase 2 | Complete |
+| SEARCH-04 | Phase 2 | Complete |
 | SEARCH-05 | Phase 2 | Pending |
-| SEARCH-06 | Phase 2 | Pending |
+| SEARCH-06 | Phase 2 | Complete |
 | RULES-01 | Phase 3 | Pending |
 | RULES-02 | Phase 3 | Pending |
 | RULES-03 | Phase 3 | Pending |

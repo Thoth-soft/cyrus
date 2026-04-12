@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1.0
 milestone_name: "**Goal**: Ship v0.1.0. Replace the README skeleton from Phase 0 with a real one, document the threat model honestly"
 status: verifying
-stopped_at: "Phase 1 Plan 02 complete: cyrus.storage shipped with 43 new tests including STORE-07 100-parallel-write stress; Phase 1 ready for verification"
-last_updated: "2026-04-12T22:42:28.681Z"
+stopped_at: Completed 02-01-PLAN.md (cyrus.search + _searchutil with ReDoS guard)
+last_updated: "2026-04-12T23:04:02.845Z"
 last_activity: 2026-04-12
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
   percent: 12
 ---
 
@@ -53,6 +53,7 @@ Progress: [█░░░░░░░░░] 12%
 
 *Updated after each plan completion*
 | Phase 01-storage-foundation P02 | 9min | 3 tasks | 2 files |
+| Phase 02 P01 | 7 min | 4 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 01-storage-foundation]: Platform filelock primitive chosen at IMPORT time via sys.platform gate
 - [Phase 01-storage-foundation]: Lock files intentionally never deleted on release — race-safe
 - [Phase 01-storage-foundation]: ISO timestamps preserved as strings through parse/dump for lossless round-trip
+- [Phase 02]: Pre-reject catastrophic regex shapes structurally before re.compile rather than relying on thread watchdog (CPython re holds GIL; thread watchdog cannot preempt)
+- [Phase 02]: Use heapq.nlargest with (score, updated_iso, idx, result) tuples for bounded results and deterministic tie-breaking by updated desc
 
 ### Pending Todos
 
@@ -90,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T22:42:28.677Z
-Stopped at: Phase 1 Plan 02 complete: cyrus.storage shipped with 43 new tests including STORE-07 100-parallel-write stress; Phase 1 ready for verification
+Last session: 2026-04-12T23:04:02.841Z
+Stopped at: Completed 02-01-PLAN.md (cyrus.search + _searchutil with ReDoS guard)
 Resume file: None
