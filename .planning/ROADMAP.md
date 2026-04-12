@@ -60,7 +60,10 @@ Plans:
   2. Optional filters for `category=`, date range, and tags reduce the result set as expected.
   3. A malicious regex query (catastrophic backtracking pattern) is killed by the ReDoS guard within a fixed timeout and surfaces a clear error rather than hanging the process.
   4. The 10k-file synthetic benchmark runs in CI and asserts p95 search latency under 500ms on warm cache. The benchmark data is checked in or generated deterministically from a seed.
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 02-01-PLAN.md — Core search: _searchutil helpers + public search() API with filters, scoring, snippet extraction, and ReDoS guard (SEARCH-01/02/03/04/06)
+- [ ] 02-02-PLAN.md — Deterministic 10k-file corpus generator + CYRUS_BENCH-gated p95<500ms benchmark (SEARCH-05)
 **UI hint**: no
 
 ### Phase 3: Rules Engine
@@ -135,7 +138,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 0. Setup & Naming Gate | 2/2 | Complete | 2026-04-12 |
 | 1. Storage Foundation | 1/2 | Executing | - |
-| 2. Search Engine | 0/TBD | Not started | - |
+| 2. Search Engine | 0/2 | Not started | - |
 | 3. Rules Engine | 0/TBD | Not started | - |
 | 4. PreToolUse Hook | 0/TBD | Not started | - |
 | 5. MCP Server | 0/TBD | Not started | - |
