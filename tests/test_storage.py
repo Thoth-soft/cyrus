@@ -309,7 +309,14 @@ class TestSaveMemory(_TempHomeMixin, unittest.TestCase):
 
     def test_cyrus_home_respected(self):
         p = save_memory("rules", "content", title="Rule X")
-        self.assertTrue(str(p).startswith(self._tmp))
+        # Compare resolved paths: macOS resolves /var -> /private/var, and
+        # Windows may normalize casing or short-name forms, so raw string
+        # startswith() is unreliable. .resolve() both sides and compare.
+        resolved_tmp = Path(self._tmp).resolve()
+        self.assertTrue(
+            p.resolve().is_relative_to(resolved_tmp),
+            f"{p.resolve()} not under {resolved_tmp}",
+        )
 
 
 class TestConcurrentWrites(_TempHomeMixin, unittest.TestCase):
