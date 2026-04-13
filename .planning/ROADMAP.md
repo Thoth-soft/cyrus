@@ -91,7 +91,10 @@ Plans:
   3. End-to-end integration test: a real Claude Code session is invoked with a "block all Bash" rule installed, attempts a Bash tool call, and the test asserts the call was blocked, the message reached the user, and no command executed. Runs on every release.
   4. Fail-open policy verified: any internal exception in the hook is caught at the top level, logged to `~/.cyrus/hook-errors.log`, surfaced to stderr, and the hook exits 0 (allow). Three consecutive errors auto-disable the hook via a marker file that `cyrus doctor` will later surface.
   5. **Dogfooding exit (felt-experience criterion)**: Mo has personally been blocked by a Cyrus rule while doing real work and appreciated it. This is not a metric — it is a lived experience. The phase does not close until it happens.
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 04-01-PLAN.md — CLI router + hook core (block/warn/allow, fail-open, kill switch, `cyrus hook enable/disable`) covering HOOK-01..07, HOOK-09
+- [ ] 04-02-PLAN.md — `cyrus hook bench` (CYRUS_BENCH-gated, platform-aware budget) + HOOK-10 integration-test runbook; covers HOOK-08, HOOK-10
 **UI hint**: no
 
 ### Phase 5: MCP Server
@@ -142,7 +145,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Storage Foundation | 1/2 | Executing | - |
 | 2. Search Engine | 0/2 | Not started | - |
 | 3. Rules Engine | 0/1 | Not started | - |
-| 4. PreToolUse Hook | 0/TBD | Not started | - |
+| 4. PreToolUse Hook | 0/2 | Not started | - |
 | 5. MCP Server | 0/TBD | Not started | - |
 | 6. CLI & Install Experience | 0/TBD | Not started | - |
 | 7. Polish, Docs & Release | 0/TBD | Not started | - |
