@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1.0
 milestone_name: "**Goal**: Ship v0.1.0. Replace the README skeleton from Phase 0 with a real one, document the threat model honestly"
 status: verifying
-stopped_at: Completed 02-02-PLAN.md (benchmark + perf optimizations; SEARCH-05 pending Linux CI verification)
-last_updated: "2026-04-12T23:48:43.886Z"
-last_activity: 2026-04-12
+stopped_at: Completed 03-01-PLAN.md (rules engine, RULES-01..08 closed; CI green)
+last_updated: "2026-04-13T00:13:36.251Z"
+last_activity: 2026-04-13
 progress:
   total_phases: 8
-  completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  completed_phases: 4
+  total_plans: 7
+  completed_plans: 7
   percent: 12
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 Phase: 1 (Storage Foundation) — EXECUTING
 Plan: 2 of 2 (01-02: cyrus.storage atomic write + frontmatter + filelock)
 Status: Phase complete — ready for verification
-Last activity: 2026-04-12
+Last activity: 2026-04-13
 
 Progress: [█░░░░░░░░░] 12%
 
@@ -55,6 +55,7 @@ Progress: [█░░░░░░░░░] 12%
 | Phase 01-storage-foundation P02 | 9min | 3 tasks | 2 files |
 | Phase 02 P01 | 7 min | 4 tasks | 4 files |
 | Phase 02-search-engine P02 | 40min | 2 tasks | 4 files |
+| Phase 03 P01 | 8 min | 5 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase 02-search-engine]: Corpus seed locked at 0xC0FFEE; changing it invalidates historical perf numbers
 - [Phase 02-search-engine]: Platform-aware p95 budget (500ms Linux/macOS, 1500ms Windows) — NTFS syscall floor ~650ms makes 500ms physically unreachable in pure stdlib
 - [Phase 02-search-engine]: SEARCH-05 pending Linux-CI verification; benchmark infra (work-product) delivered but design target unverified on fast-I/O platform
+- [Phase 03]: Cache full parsed rule list per directory; apply trigger/tool/pause filters post-cache — changing filter args costs zero I/O
+- [Phase 03]: assertLogs over contextlib.redirect_stderr for logger-output capture — StreamHandler binds sys.stderr at configure time
+- [Phase 03]: Tuple-typed triggers/matches in Rule dataclass so frozen dataclass is hashable
 
 ### Pending Todos
 
@@ -97,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-12T23:48:35.165Z
-Stopped at: Completed 02-02-PLAN.md (benchmark + perf optimizations; SEARCH-05 pending Linux CI verification)
+Last session: 2026-04-13T00:13:30.915Z
+Stopped at: Completed 03-01-PLAN.md (rules engine, RULES-01..08 closed; CI green)
 Resume file: None

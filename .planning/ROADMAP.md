@@ -78,7 +78,7 @@ Plans:
   5. `CYRUS_PAUSE=<rule-name>` (or a `cyrus pause` marker file) suppresses a single rule for the duration of the override and restores it cleanly when removed.
 **Plans**: 1 plan
 Plans:
-- [ ] 03-01-PLAN.md — TDD rules engine: _rulesutil helpers + rules.py public API (load_rules, evaluate, test_rule, clear_cache) + 13 fixtures; covers RULES-01..08
+- [x] 03-01-PLAN.md — TDD rules engine: _rulesutil helpers + rules.py public API (load_rules, evaluate, test_rule, clear_cache) + 13 fixtures; covers RULES-01..08
 **UI hint**: no
 
 ### Phase 4: PreToolUse Hook (THE DIFFERENTIATOR)

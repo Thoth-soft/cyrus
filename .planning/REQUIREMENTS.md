@@ -37,14 +37,14 @@
 
 ### Rules Engine (RULES)
 
-- [ ] **RULES-01**: Rule files live in `~/.cyrus/rules/*.md` with frontmatter fields: `name`, `severity` (block|warn), `triggers` (list of hook events), `matches` (list of tool names), `pattern` (regex), `priority`, `message`.
-- [ ] **RULES-02**: Strict frontmatter parser — surfaces parse errors loudly to stderr and skips invalid rules rather than silently ignoring them.
-- [ ] **RULES-03**: Rule matching is tool-scoped by default (`matches: [Bash]` only fires on Bash tool calls). Wildcard `*` supported.
-- [ ] **RULES-04**: Rule patterns use anchored regex by default to prevent accidental matching. Unanchored patterns require explicit `anchored: false`.
-- [ ] **RULES-05**: Precedence rule: `block` severity wins over `warn`. When multiple block rules match, highest priority wins. Tied priorities: first match wins and logs the tie.
-- [ ] **RULES-06**: Compiled rule cache (pickled `re.Pattern` objects) invalidated when any file in rules directory changes (mtime check).
-- [ ] **RULES-07**: `cyrus rule test <rule-name> <tool> <input>` dry-run command evaluates a rule without executing anything. For iterative rule development.
-- [ ] **RULES-08**: Temporary rule override via `CYRUS_PAUSE=<rule-name>` env var or `cyrus pause <rule>` command (sets marker file).
+- [x] **RULES-01**: Rule files live in `~/.cyrus/rules/*.md` with frontmatter fields: `name`, `severity` (block|warn), `triggers` (list of hook events), `matches` (list of tool names), `pattern` (regex), `priority`, `message`.
+- [x] **RULES-02**: Strict frontmatter parser — surfaces parse errors loudly to stderr and skips invalid rules rather than silently ignoring them.
+- [x] **RULES-03**: Rule matching is tool-scoped by default (`matches: [Bash]` only fires on Bash tool calls). Wildcard `*` supported.
+- [x] **RULES-04**: Rule patterns use anchored regex by default to prevent accidental matching. Unanchored patterns require explicit `anchored: false`.
+- [x] **RULES-05**: Precedence rule: `block` severity wins over `warn`. When multiple block rules match, highest priority wins. Tied priorities: first match wins and logs the tie.
+- [x] **RULES-06**: Compiled rule cache (pickled `re.Pattern` objects) invalidated when any file in rules directory changes (mtime check).
+- [x] **RULES-07**: `cyrus rule test <rule-name> <tool> <input>` dry-run command evaluates a rule without executing anything. For iterative rule development.
+- [x] **RULES-08**: Temporary rule override via `CYRUS_PAUSE=<rule-name>` env var or `cyrus pause <rule>` command (sets marker file).
 
 ### PreToolUse Hook (HOOK)
 
@@ -148,14 +148,14 @@
 | SEARCH-04 | Phase 2 | Complete |
 | SEARCH-05 | Phase 2 | Pending |
 | SEARCH-06 | Phase 2 | Complete |
-| RULES-01 | Phase 3 | Pending |
-| RULES-02 | Phase 3 | Pending |
-| RULES-03 | Phase 3 | Pending |
-| RULES-04 | Phase 3 | Pending |
-| RULES-05 | Phase 3 | Pending |
-| RULES-06 | Phase 3 | Pending |
-| RULES-07 | Phase 3 | Pending |
-| RULES-08 | Phase 3 | Pending |
+| RULES-01 | Phase 3 | Complete |
+| RULES-02 | Phase 3 | Complete |
+| RULES-03 | Phase 3 | Complete |
+| RULES-04 | Phase 3 | Complete |
+| RULES-05 | Phase 3 | Complete |
+| RULES-06 | Phase 3 | Complete |
+| RULES-07 | Phase 3 | Complete |
+| RULES-08 | Phase 3 | Complete |
 | HOOK-01 | Phase 4 | Pending |
 | HOOK-02 | Phase 4 | Pending |
 | HOOK-03 | Phase 4 | Pending |
