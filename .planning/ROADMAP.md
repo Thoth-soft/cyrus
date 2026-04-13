@@ -76,7 +76,9 @@ Plans:
   3. Precedence is exhaustively tested: `block` beats `warn`; among blocks, highest priority wins; ties resolve to first-match and log the tie.
   4. The compiled-rules cache invalidates correctly when any file in the rules directory changes mtime, and `cyrus rule test <rule> <tool> <input>` evaluates a rule end-to-end without executing anything.
   5. `CYRUS_PAUSE=<rule-name>` (or a `cyrus pause` marker file) suppresses a single rule for the duration of the override and restores it cleanly when removed.
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 03-01-PLAN.md — TDD rules engine: _rulesutil helpers + rules.py public API (load_rules, evaluate, test_rule, clear_cache) + 13 fixtures; covers RULES-01..08
 **UI hint**: no
 
 ### Phase 4: PreToolUse Hook (THE DIFFERENTIATOR)
@@ -139,7 +141,7 @@ Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 0. Setup & Naming Gate | 2/2 | Complete | 2026-04-12 |
 | 1. Storage Foundation | 1/2 | Executing | - |
 | 2. Search Engine | 0/2 | Not started | - |
-| 3. Rules Engine | 0/TBD | Not started | - |
+| 3. Rules Engine | 0/1 | Not started | - |
 | 4. PreToolUse Hook | 0/TBD | Not started | - |
 | 5. MCP Server | 0/TBD | Not started | - |
 | 6. CLI & Install Experience | 0/TBD | Not started | - |
