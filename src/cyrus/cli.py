@@ -55,6 +55,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Create kill-switch marker; short-circuit hook to allow",
     )
 
+    # Phase 5: MCP stdio server. `claude mcp add cyrus -- cyrus serve`
+    # wires this into Claude Code. The subparser takes no arguments — the
+    # server reads every directive off stdin as JSON-RPC frames.
+    sub.add_parser(
+        "serve",
+        help="Run MCP stdio server (invoked by Claude Code via `claude mcp add cyrus`)",
+    )
+
     return parser
 
 
@@ -103,6 +111,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.hook_command == "disable":
             from cyrus.hook import disable as hook_disable
             return hook_disable()
+
+    if args.command == "serve":
+        # Lazy import: keeps `cyrus hook run` cold-start unaffected by the
+        # server module (which pulls in cyrus.jsonrpc + cyrus.logutil at
+        # import time — cheap, but still not free on the hook path).
+        from cyrus.server import main as server_main
+        return server_main()
 
     # Unreachable — argparse would have exited on unknown commands.
     parser.error(f"unknown command: {args.command}")
