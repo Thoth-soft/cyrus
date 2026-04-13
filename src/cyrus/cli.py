@@ -25,7 +25,13 @@ inside main() branches.
 from __future__ import annotations
 
 import argparse
+import re as _re
 import sys
+
+# Rule-name validator: lowercase alnum + hyphens, 2-50 chars total, starting
+# and ending alnum so backup suffixes like `-bak` can never produce an
+# unparseable `.md` filename. Matches Path.stem format expectations.
+_NAME_RE = _re.compile(r"^[a-z0-9][a-z0-9-]{0,48}[a-z0-9]$")
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -80,6 +86,48 @@ def _build_parser() -> argparse.ArgumentParser:
         dest="json_mode",
         action="store_true",
         help="Emit machine-readable JSON to stdout",
+    )
+
+    addrule = sub.add_parser(
+        "add-rule",
+        help="Create a new rule file in ~/.cyrus/rules/<name>.md",
+    )
+    addrule.add_argument("--name", required=True)
+    addrule.add_argument(
+        "--severity", required=True, choices=["block", "warn"]
+    )
+    addrule.add_argument(
+        "--matches",
+        required=True,
+        nargs="+",
+        help="One or more tool names, or '*' for wildcard",
+    )
+    addrule.add_argument("--pattern", required=True)
+    addrule.add_argument("--message", required=True)
+    addrule.add_argument("--priority", type=int, default=50)
+    addrule.add_argument(
+        "--triggers",
+        nargs="+",
+        default=["PreToolUse"],
+        help="Hook events to trigger on (default: PreToolUse)",
+    )
+    addrule.add_argument(
+        "--anchored",
+        dest="anchored",
+        action="store_true",
+        default=True,
+        help="Anchor the pattern with ^ and $ (default: on)",
+    )
+    addrule.add_argument(
+        "--no-anchored",
+        dest="anchored",
+        action="store_false",
+        help="Do not anchor the pattern (allow substring match)",
+    )
+
+    sub.add_parser(
+        "list-rules",
+        help="List rules in ~/.cyrus/rules/ as an ASCII table",
     )
 
     return parser
@@ -147,9 +195,108 @@ def main(argv: list[str] | None = None) -> int:
         extra = ["--json"] if args.json_mode else []
         return doctor_run(extra)
 
+    if args.command == "add-rule":
+        return _cmd_add_rule(args)
+
+    if args.command == "list-rules":
+        return _cmd_list_rules()
+
     # Unreachable: argparse would have exited on unknown commands.
     parser.error(f"unknown command: {args.command}")
     return 2
+
+
+def _cmd_add_rule(args: argparse.Namespace) -> int:
+    """Validate args, compile the regex, and write the rule file.
+
+    Validation order:
+    1. Name matches _NAME_RE (lowercase alnum + hyphens, 2-50 chars).
+    2. Pattern compiles (anchored per --anchored flag).
+    3. Target file does not already exist (no accidental overwrite).
+
+    On any validation failure: exit 2, write a single-line error to stderr,
+    leave the filesystem untouched. On success: write the file via
+    atomic_write + dump_frontmatter and exit 0.
+    """
+    from cyrus._rulesutil import _compile_rule_pattern
+    from cyrus.paths import category_dir
+    from cyrus.storage import atomic_write, dump_frontmatter
+
+    if not _NAME_RE.match(args.name):
+        sys.stderr.write(
+            f"cyrus add-rule: invalid name {args.name!r}; "
+            "must be lowercase alnum + hyphens, 2-50 chars\n"
+        )
+        return 2
+
+    try:
+        _compile_rule_pattern(args.pattern, anchored=args.anchored)
+    except Exception as exc:  # noqa: BLE001 -- surface re.error and friends
+        sys.stderr.write(
+            f"cyrus add-rule: regex will not compile: {exc}\n"
+        )
+        return 2
+
+    rules_dir = category_dir("rules")
+    rules_dir.mkdir(parents=True, exist_ok=True)
+    path = rules_dir / f"{args.name}.md"
+    if path.exists():
+        sys.stderr.write(
+            f"cyrus add-rule: {path} already exists; choose a different --name\n"
+        )
+        return 2
+
+    metadata = {
+        "name": args.name,
+        "severity": args.severity,
+        "triggers": list(args.triggers),
+        "matches": list(args.matches),
+        "pattern": args.pattern,
+        "priority": int(args.priority),
+        "message": args.message,
+        "anchored": bool(args.anchored),
+    }
+    document = dump_frontmatter(metadata, "")
+    atomic_write(path, document)
+    sys.stderr.write(f"[OK] wrote {path}\n")
+    return 0
+
+
+def _cmd_list_rules() -> int:
+    """Print an ASCII table of rules in ~/.cyrus/rules/ to stdout.
+
+    Broken rules (missing required frontmatter, bad regex, I/O error) get
+    a STATUS=BROKEN row rather than crashing the command -- surfacing the
+    mess is the point. Exit is always 0; a broken rule is a data issue,
+    not a program failure.
+    """
+    from cyrus._cliutil import format_table
+    from cyrus._rulesutil import _parse_rule_file
+    from cyrus.paths import category_dir
+
+    rules_dir = category_dir("rules")
+    headers = ["NAME", "SEVERITY", "MATCHES", "PATTERN", "STATUS"]
+    rows: list[list[str]] = []
+    if rules_dir.exists():
+        for path in sorted(rules_dir.glob("*.md")):
+            try:
+                r = _parse_rule_file(path)
+                rows.append([
+                    r.name,
+                    r.severity,
+                    ",".join(r.matches),
+                    r.raw_pattern[:40],
+                    "OK",
+                ])
+            except (ValueError, OSError) as exc:
+                detail = str(exc)[:40]
+                rows.append([path.stem, "?", "?", detail, "BROKEN"])
+    sys.stdout.write(format_table(headers, rows) + "\n")
+    try:
+        sys.stdout.flush()
+    except (ValueError, OSError):
+        pass
+    return 0
 
 
 if __name__ == "__main__":
