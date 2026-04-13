@@ -70,6 +70,18 @@ def _build_parser() -> argparse.ArgumentParser:
              "~/.claude/settings.json",
     )
 
+    doctor = sub.add_parser(
+        "doctor",
+        help="Run 7 diagnostic checks (Python, PATH, ~/.cyrus, settings.json, "
+             "MCP canary, kill switch, recent errors)",
+    )
+    doctor.add_argument(
+        "--json",
+        dest="json_mode",
+        action="store_true",
+        help="Emit machine-readable JSON to stdout",
+    )
+
     return parser
 
 
@@ -129,6 +141,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "init":
         from cyrus._init import run as init_run
         return init_run([])
+
+    if args.command == "doctor":
+        from cyrus._doctor import run as doctor_run
+        extra = ["--json"] if args.json_mode else []
+        return doctor_run(extra)
 
     # Unreachable: argparse would have exited on unknown commands.
     parser.error(f"unknown command: {args.command}")
