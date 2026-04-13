@@ -94,7 +94,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 04-01-PLAN.md — CLI router + hook core (block/warn/allow, fail-open, kill switch, `cyrus hook enable/disable`) covering HOOK-01..07, HOOK-09
-- [ ] 04-02-PLAN.md — `cyrus hook bench` (CYRUS_BENCH-gated, platform-aware budget) + HOOK-10 integration-test runbook; covers HOOK-08, HOOK-10
+- [x] 04-02-PLAN.md — `cyrus hook bench` (CYRUS_BENCH-gated, platform-aware budget) + HOOK-10 integration-test runbook; covers HOOK-08, HOOK-10
 **UI hint**: no
 
 ### Phase 5: MCP Server

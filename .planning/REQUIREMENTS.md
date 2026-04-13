@@ -55,9 +55,9 @@
 - [x] **HOOK-05**: Belt-and-suspenders: hook also writes blocking reason to stderr and optionally exits 2 as a fallback if stdout JSON is ignored.
 - [x] **HOOK-06**: Hook fail-open policy: any exception is caught at top level, logged to `~/.cyrus/hook-errors.log`, a warning written to stderr, and the hook exits 0 (allow). Never locks Claude Code out of tool calls.
 - [x] **HOOK-07**: Kill switch: 3 consecutive hook errors cause it to auto-disable by writing a marker file. `cyrus doctor` surfaces this.
-- [ ] **HOOK-08**: **Performance budget: p50 under 50ms, p95 under 150ms** measured by `cyrus hook bench` over 100 runs on all three OSes. CI gate fails the build if exceeded.
+- [x] **HOOK-08**: **Performance budget: p50 under 50ms, p95 under 150ms** measured by `cyrus hook bench` over 100 runs on all three OSes. CI gate fails the build if exceeded.
 - [x] **HOOK-09**: Lazy imports — top of `hook.py` imports only `sys`, `json`. All other imports inside functions. `python -X importtime cyrus.hook` shows <30ms total import time.
-- [ ] **HOOK-10**: End-to-end integration test: install a rule that blocks all `Bash` tool calls, invoke Claude Code with a Bash command, assert the block message appears and the command did not execute. Runs on every release.
+- [x] **HOOK-10**: End-to-end integration test: install a rule that blocks all `Bash` tool calls, invoke Claude Code with a Bash command, assert the block message appears and the command did not execute. Runs on every release.
 
 ### MCP Server (MCP)
 
@@ -163,9 +163,9 @@
 | HOOK-05 | Phase 4 | Complete |
 | HOOK-06 | Phase 4 | Complete |
 | HOOK-07 | Phase 4 | Complete |
-| HOOK-08 | Phase 4 | Pending |
+| HOOK-08 | Phase 4 | Complete |
 | HOOK-09 | Phase 4 | Complete |
-| HOOK-10 | Phase 4 | Pending |
+| HOOK-10 | Phase 4 | Complete |
 | MCP-01 | Phase 5 | Pending |
 | MCP-02 | Phase 5 | Pending |
 | MCP-03 | Phase 5 | Pending |

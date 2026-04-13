@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1.0
 milestone_name: "**Goal**: Ship v0.1.0. Replace the README skeleton from Phase 0 with a real one, document the threat model honestly"
 status: verifying
-stopped_at: Completed 04-01-PLAN.md (HOOK-01..07 + HOOK-09 green; 215 tests pass; smoke test confirms block+exit 2)
-last_updated: "2026-04-13T00:34:54.017Z"
+stopped_at: Completed 04-02-PLAN.md (HOOK-08 bench + HOOK-10 runbook); 216 tests pass; awaiting user manual Claude Code integration test
+last_updated: "2026-04-13T00:44:46.161Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 8
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
   percent: 12
 ---
 
@@ -57,6 +57,7 @@ Progress: [█░░░░░░░░░] 12%
 | Phase 02-search-engine P02 | 40min | 2 tasks | 4 files |
 | Phase 03 P01 | 8 min | 5 tasks | 17 files |
 | Phase 04-pretool-hook P01 | 7 min | 3 tasks | 10 files |
+| Phase 04-pretool-hook P02 | 4min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,9 @@ Recent decisions affecting current work:
 - [Phase 04-pretool-hook]: Kill-switch SoT is the error-log tail (_KILL_WINDOW_SECONDS=600, _KILL_THRESHOLD=3). No side counter — file is the truth, crash-safe, zero extra I/O.
 - [Phase 04-pretool-hook]: hook.py module-top imports restricted to {sys, json, __future__}; ast-introspection test enforces it structurally. Every cyrus.* import lives inside _run().
 - [Phase 04-pretool-hook]: CLI entry reconfigures stdout+stderr to utf-8/replace (Pitfall 4 fix, Rule 2 deviation) — defense-in-depth against future non-ASCII help text.
+- [Phase 04-pretool-hook]: Hook bench is subprocess-based (not in-process) — only way to honestly measure Python cold-start Claude Code pays per tool call
+- [Phase 04-pretool-hook]: Windows CI needs CYRUS_HOOK_P50_MS=200 CYRUS_HOOK_P95_MS=300 overrides (Python cold-start floor ~130ms on Win11)
+- [Phase 04-pretool-hook]: HOOK-10 shipped as documented manual runbook (docs/hook-integration-test.md); automated headless-Claude-Code integration test deferred to v2
 
 ### Pending Todos
 
@@ -105,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T00:34:54.012Z
-Stopped at: Completed 04-01-PLAN.md (HOOK-01..07 + HOOK-09 green; 215 tests pass; smoke test confirms block+exit 2)
+Last session: 2026-04-13T00:44:46.156Z
+Stopped at: Completed 04-02-PLAN.md (HOOK-08 bench + HOOK-10 runbook); 216 tests pass; awaiting user manual Claude Code integration test
 Resume file: None
