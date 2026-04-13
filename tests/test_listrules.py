@@ -1,4 +1,4 @@
-"""Tests for `cyrus list-rules` (CLI-05).
+"""Tests for `sekha list-rules` (CLI-05).
 
 Plan 06-01 Task 4 -- RED stage. Subcommand not yet wired.
 
@@ -21,11 +21,11 @@ class ListRulesTestBase(unittest.TestCase):
     def setUp(self) -> None:
         self._td = tempfile.TemporaryDirectory()
         self.tmp = Path(self._td.name)
-        self.cyrus_dir = self.tmp / "cyrus"
-        self.rules_dir = self.cyrus_dir / "rules"
+        self.sekha_dir = self.tmp / "sekha"
+        self.rules_dir = self.sekha_dir / "rules"
         self.rules_dir.mkdir(parents=True, exist_ok=True)
         self._env_patch = mock.patch.dict(
-            os.environ, {"CYRUS_HOME": str(self.cyrus_dir)}
+            os.environ, {"SEKHA_HOME": str(self.sekha_dir)}
         )
         self._env_patch.start()
 
@@ -34,7 +34,7 @@ class ListRulesTestBase(unittest.TestCase):
         self._td.cleanup()
 
     def _call(self) -> tuple[int, str, str]:
-        from cyrus.cli import main
+        from sekha.cli import main
         stdout = io.StringIO()
         stderr = io.StringIO()
         try:
@@ -45,7 +45,7 @@ class ListRulesTestBase(unittest.TestCase):
         return rc, stdout.getvalue(), stderr.getvalue()
 
     def _write_valid_rule(self, name: str, severity: str = "block") -> None:
-        from cyrus.storage import dump_frontmatter
+        from sekha.storage import dump_frontmatter
         meta = {
             "severity": severity,
             "triggers": ["PreToolUse"],

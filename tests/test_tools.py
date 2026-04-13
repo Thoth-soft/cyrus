@@ -1,6 +1,6 @@
-"""Tests for cyrus.tools: 6 MCP tool handlers delegating to storage/search/rules.
+"""Tests for sekha.tools: 6 MCP tool handlers delegating to storage/search/rules.
 
-RED stage for Plan 05-01 Task 3. Every test stages its own CYRUS_HOME
+RED stage for Plan 05-01 Task 3. Every test stages its own SEKHA_HOME
 tempdir so no two tests collide on disk. Handlers are asserted at the
 dict-shape level — the underlying storage/search/rules behavior already
 has its own dedicated test modules; we don't duplicate that coverage,
@@ -14,30 +14,30 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cyrus.storage import parse_frontmatter
+from sekha.storage import parse_frontmatter
 
 
 class _TempHomeMixin:
     def setUp(self):
-        self._tmp = tempfile.mkdtemp(prefix="cyrus-tools-test-")
-        self._saved = os.environ.get("CYRUS_HOME")
-        os.environ["CYRUS_HOME"] = self._tmp
+        self._tmp = tempfile.mkdtemp(prefix="sekha-tools-test-")
+        self._saved = os.environ.get("SEKHA_HOME")
+        os.environ["SEKHA_HOME"] = self._tmp
 
     def tearDown(self):
         if self._saved is None:
-            os.environ.pop("CYRUS_HOME", None)
+            os.environ.pop("SEKHA_HOME", None)
         else:
-            os.environ["CYRUS_HOME"] = self._saved
+            os.environ["SEKHA_HOME"] = self._saved
         shutil.rmtree(self._tmp, ignore_errors=True)
 
 
 # --------------------------------------------------------------------------
-# cyrus_save (MCP-04)
+# sekha_save (MCP-04)
 # --------------------------------------------------------------------------
-class TestCyrusSave(_TempHomeMixin, unittest.TestCase):
+class TestSekhaSave(_TempHomeMixin, unittest.TestCase):
     def test_save_returns_path_and_id(self):
-        from cyrus.tools import cyrus_save
-        result = cyrus_save(category="decisions", content="Use Python 3.11")
+        from sekha.tools import sekha_save
+        result = sekha_save(category="decisions", content="Use Python 3.11")
         self.assertIn("path", result)
         self.assertIn("id", result)
         self.assertTrue(result["path"].endswith(".md"))
@@ -50,8 +50,8 @@ class TestCyrusSave(_TempHomeMixin, unittest.TestCase):
         self.assertEqual(p.parent.name, "decisions")
 
     def test_save_honours_tags_and_source(self):
-        from cyrus.tools import cyrus_save
-        result = cyrus_save(
+        from sekha.tools import sekha_save
+        result = sekha_save(
             category="sessions",
             content="note body",
             tags=["alpha", "beta"],
@@ -64,24 +64,24 @@ class TestCyrusSave(_TempHomeMixin, unittest.TestCase):
         self.assertIn("note body", body)
 
     def test_save_rejects_invalid_category(self):
-        from cyrus.tools import cyrus_save
+        from sekha.tools import sekha_save
         with self.assertRaises(ValueError):
-            cyrus_save(category="bogus", content="x")
+            sekha_save(category="bogus", content="x")
 
 
 # --------------------------------------------------------------------------
-# cyrus_search (MCP-05)
+# sekha_search (MCP-05)
 # --------------------------------------------------------------------------
-class TestCyrusSearch(_TempHomeMixin, unittest.TestCase):
+class TestSekhaSearch(_TempHomeMixin, unittest.TestCase):
     def _save(self, category, content, **kw):
-        from cyrus.tools import cyrus_save
-        return cyrus_save(category=category, content=content, **kw)
+        from sekha.tools import sekha_save
+        return sekha_save(category=category, content=content, **kw)
 
     def test_search_returns_results_shape(self):
-        from cyrus.tools import cyrus_search
+        from sekha.tools import sekha_search
         self._save("decisions", "alpha beta gamma")
         self._save("sessions", "alpha only")
-        out = cyrus_search(query="alpha")
+        out = sekha_search(query="alpha")
         self.assertIn("results", out)
         self.assertGreaterEqual(len(out["results"]), 2)
         for r in out["results"]:
@@ -90,35 +90,35 @@ class TestCyrusSearch(_TempHomeMixin, unittest.TestCase):
             )
 
     def test_search_honours_category_filter(self):
-        from cyrus.tools import cyrus_search
+        from sekha.tools import sekha_search
         self._save("decisions", "needle in decisions")
         self._save("sessions", "needle in sessions")
-        out = cyrus_search(query="needle", category="decisions")
+        out = sekha_search(query="needle", category="decisions")
         self.assertEqual(len(out["results"]), 1)
         self.assertIn("decisions", out["results"][0]["path"])
 
     def test_search_limit_default_is_10(self):
-        from cyrus.tools import cyrus_search
+        from sekha.tools import sekha_search
         for i in range(12):
             self._save("sessions", f"foo number {i}", tags=[f"t{i}"])
-        out = cyrus_search(query="foo")
+        out = sekha_search(query="foo")
         self.assertLessEqual(len(out["results"]), 10)
 
 
 # --------------------------------------------------------------------------
-# cyrus_list (MCP-06)
+# sekha_list (MCP-06)
 # --------------------------------------------------------------------------
-class TestCyrusList(_TempHomeMixin, unittest.TestCase):
+class TestSekhaList(_TempHomeMixin, unittest.TestCase):
     def _save(self, category, content):
-        from cyrus.tools import cyrus_save
-        return cyrus_save(category=category, content=content)
+        from sekha.tools import sekha_save
+        return sekha_save(category=category, content=content)
 
     def test_list_returns_metadata_no_body(self):
-        from cyrus.tools import cyrus_list
+        from sekha.tools import sekha_list
         self._save("sessions", "one")
         self._save("decisions", "two")
         self._save("sessions", "three")
-        out = cyrus_list()
+        out = sekha_list()
         self.assertIn("memories", out)
         self.assertGreaterEqual(len(out["memories"]), 3)
         for m in out["memories"]:
@@ -128,50 +128,50 @@ class TestCyrusList(_TempHomeMixin, unittest.TestCase):
             self.assertNotIn("body", m)
 
     def test_list_category_filter(self):
-        from cyrus.tools import cyrus_list
+        from sekha.tools import sekha_list
         self._save("sessions", "a")
         self._save("decisions", "b")
-        out = cyrus_list(category="decisions")
+        out = sekha_list(category="decisions")
         self.assertGreaterEqual(len(out["memories"]), 1)
         for m in out["memories"]:
             self.assertIn("decisions", m["path"])
 
     def test_list_limit(self):
-        from cyrus.tools import cyrus_list
+        from sekha.tools import sekha_list
         for i in range(5):
             self._save("sessions", f"entry-{i}")
-        out = cyrus_list(limit=2)
+        out = sekha_list(limit=2)
         self.assertLessEqual(len(out["memories"]), 2)
 
 
 # --------------------------------------------------------------------------
-# cyrus_delete (MCP-07)
+# sekha_delete (MCP-07)
 # --------------------------------------------------------------------------
-class TestCyrusDelete(_TempHomeMixin, unittest.TestCase):
+class TestSekhaDelete(_TempHomeMixin, unittest.TestCase):
     def test_delete_removes_file(self):
-        from cyrus.tools import cyrus_delete, cyrus_save
-        saved = cyrus_save(category="sessions", content="doomed")
-        out = cyrus_delete(path=saved["path"])
+        from sekha.tools import sekha_delete, sekha_save
+        saved = sekha_save(category="sessions", content="doomed")
+        out = sekha_delete(path=saved["path"])
         self.assertTrue(out["success"])
         self.assertFalse(Path(saved["path"]).exists())
 
     def test_delete_missing_returns_failure(self):
-        from cyrus.tools import cyrus_delete
+        from sekha.tools import sekha_delete
         fake = str(Path(self._tmp) / "sessions" / "nope.md")
-        out = cyrus_delete(path=fake)
+        out = sekha_delete(path=fake)
         self.assertFalse(out["success"])
         self.assertIn("error", out)
 
-    def test_delete_rejects_path_outside_cyrus_home(self):
-        from cyrus.tools import cyrus_delete
-        # Create a real file outside CYRUS_HOME to prove we don't touch it.
+    def test_delete_rejects_path_outside_sekha_home(self):
+        from sekha.tools import sekha_delete
+        # Create a real file outside SEKHA_HOME to prove we don't touch it.
         with tempfile.NamedTemporaryFile(
             delete=False, suffix=".md"
         ) as f:
             f.write(b"outside")
             outside = f.name
         try:
-            out = cyrus_delete(path=outside)
+            out = sekha_delete(path=outside)
             self.assertFalse(out["success"])
             self.assertIn("error", out)
             # The outside file must still exist.
@@ -184,14 +184,14 @@ class TestCyrusDelete(_TempHomeMixin, unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# cyrus_status (MCP-08)
+# sekha_status (MCP-08)
 # --------------------------------------------------------------------------
-class TestCyrusStatus(_TempHomeMixin, unittest.TestCase):
+class TestSekhaStatus(_TempHomeMixin, unittest.TestCase):
     def test_status_shape(self):
-        from cyrus.tools import cyrus_save, cyrus_status
-        cyrus_save(category="decisions", content="one")
-        cyrus_save(category="decisions", content="two")
-        out = cyrus_status()
+        from sekha.tools import sekha_save, sekha_status
+        sekha_save(category="decisions", content="one")
+        sekha_save(category="decisions", content="two")
+        out = sekha_status()
         for k in ("total", "by_category", "rules_count", "recent", "hook_errors"):
             self.assertIn(k, out)
         self.assertIsInstance(out["by_category"], dict)
@@ -199,20 +199,20 @@ class TestCyrusStatus(_TempHomeMixin, unittest.TestCase):
         self.assertGreaterEqual(out["total"], 2)
 
     def test_status_reads_hook_errors_log(self):
-        from cyrus.tools import cyrus_status
+        from sekha.tools import sekha_status
         log = Path(self._tmp) / "hook-errors.log"
         log.write_text("line-1\nline-2\nline-3\n", encoding="utf-8")
-        out = cyrus_status()
+        out = sekha_status()
         self.assertEqual(out["hook_errors"], 3)
 
 
 # --------------------------------------------------------------------------
-# cyrus_add_rule (MCP-09)
+# sekha_add_rule (MCP-09)
 # --------------------------------------------------------------------------
-class TestCyrusAddRule(_TempHomeMixin, unittest.TestCase):
+class TestSekhaAddRule(_TempHomeMixin, unittest.TestCase):
     def test_add_rule_writes_file(self):
-        from cyrus.tools import cyrus_add_rule
-        out = cyrus_add_rule(
+        from sekha.tools import sekha_add_rule
+        out = sekha_add_rule(
             name="no-foo",
             severity="block",
             matches=["Bash"],
@@ -234,11 +234,11 @@ class TestCyrusAddRule(_TempHomeMixin, unittest.TestCase):
         self.assertEqual(meta["triggers"], ["PreToolUse"])
 
     def test_add_rule_validates_regex_before_write(self):
-        from cyrus.tools import cyrus_add_rule
+        from sekha.tools import sekha_add_rule
         rules_dir = Path(self._tmp) / "rules"
         rule_path = rules_dir / "bad.md"
         with self.assertRaises(Exception) as ctx:
-            cyrus_add_rule(
+            sekha_add_rule(
                 name="bad",
                 severity="block",
                 matches=["*"],
@@ -252,9 +252,9 @@ class TestCyrusAddRule(_TempHomeMixin, unittest.TestCase):
         self.assertFalse(rule_path.exists())
 
     def test_add_rule_rejects_bad_severity(self):
-        from cyrus.tools import cyrus_add_rule
+        from sekha.tools import sekha_add_rule
         with self.assertRaises(ValueError):
-            cyrus_add_rule(
+            sekha_add_rule(
                 name="kab",
                 severity="kablooey",
                 matches=["*"],
@@ -268,10 +268,10 @@ class TestCyrusAddRule(_TempHomeMixin, unittest.TestCase):
 # --------------------------------------------------------------------------
 class TestHandlers(unittest.TestCase):
     def test_handlers_dict_covers_all_six(self):
-        from cyrus.tools import HANDLERS
+        from sekha.tools import HANDLERS
         expected = {
-            "cyrus_save", "cyrus_search", "cyrus_list",
-            "cyrus_delete", "cyrus_status", "cyrus_add_rule",
+            "sekha_save", "sekha_search", "sekha_list",
+            "sekha_delete", "sekha_status", "sekha_add_rule",
         }
         self.assertEqual(set(HANDLERS.keys()), expected)
         for name, fn in HANDLERS.items():

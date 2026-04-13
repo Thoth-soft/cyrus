@@ -7,14 +7,14 @@ tags: [atomic-write, filelock, frontmatter, fcntl, msvcrt, blake2b, stdlib, unit
 # Dependency graph
 requires:
   - phase: 01-storage-foundation
-    provides: cyrus.paths (cyrus_home, category_dir, CATEGORIES), cyrus.logutil (get_logger)
+    provides: sekha.paths (sekha_home, category_dir, CATEGORIES), sekha.logutil (get_logger)
 provides:
-  - cyrus.storage.atomic_write (fsync + os.replace, same-dir temp file)
-  - cyrus.storage.filelock (cross-platform context manager, 5s default timeout, FilelockTimeout)
-  - cyrus.storage.parse_frontmatter / dump_frontmatter (YAML subset, round-trip safe)
-  - cyrus.storage.slugify (NFKD ASCII-fold, 40-char cap)
-  - cyrus.storage.make_memory_path (YYYY-MM-DD_<8hex>_<slug>.md via blake2b-4)
-  - cyrus.storage.save_memory (composes all above; single public write API)
+  - sekha.storage.atomic_write (fsync + os.replace, same-dir temp file)
+  - sekha.storage.filelock (cross-platform context manager, 5s default timeout, FilelockTimeout)
+  - sekha.storage.parse_frontmatter / dump_frontmatter (YAML subset, round-trip safe)
+  - sekha.storage.slugify (NFKD ASCII-fold, 40-char cap)
+  - sekha.storage.make_memory_path (YYYY-MM-DD_<8hex>_<slug>.md via blake2b-4)
+  - sekha.storage.save_memory (composes all above; single public write API)
 affects: [02-search-local, 03-rules-engine, 04-hook-prehook, 05-mcp-server]
 
 # Tech tracking
@@ -29,7 +29,7 @@ tech-stack:
 
 key-files:
   created:
-    - src/cyrus/storage.py (386 lines — the whole public storage API)
+    - src/sekha/storage.py (386 lines — the whole public storage API)
     - tests/test_storage.py (358 lines — 43 tests including STORE-07 stress)
   modified: []
 
@@ -47,7 +47,7 @@ patterns-established:
   - "Public API: lowercase snake_case functions, FilelockTimeout is the only new exception"
   - "Module docstring explains WHY + key invariants (not a bullet list of functions)"
   - "All file I/O flows through atomic_write + filelock — never a naked open()"
-  - "Testing pattern: _TempHomeMixin sets CYRUS_HOME to tempfile.mkdtemp per-test"
+  - "Testing pattern: _TempHomeMixin sets SEKHA_HOME to tempfile.mkdtemp per-test"
 
 requirements-completed: [STORE-01, STORE-02, STORE-03, STORE-04, STORE-05, STORE-07]
 
@@ -58,7 +58,7 @@ completed: 2026-04-12
 
 # Phase 1 Plan 02: Storage Foundation Summary
 
-**`cyrus.storage` — atomic markdown writes with hand-rolled frontmatter, cross-platform filelock (fcntl/msvcrt), blake2b-hashed filenames, and a 100-parallel-write stress test that runs in ~1.0s with zero corruption.**
+**`sekha.storage` — atomic markdown writes with hand-rolled frontmatter, cross-platform filelock (fcntl/msvcrt), blake2b-hashed filenames, and a 100-parallel-write stress test that runs in ~1.0s with zero corruption.**
 
 ## Performance
 
@@ -66,7 +66,7 @@ completed: 2026-04-12
 - **Started:** 2026-04-12T22:32:00Z
 - **Completed:** 2026-04-12T22:41:07Z
 - **Tasks:** 3 (Task 3 was verification-only, no commit)
-- **Files modified:** 2 (`src/cyrus/storage.py`, `tests/test_storage.py`)
+- **Files modified:** 2 (`src/sekha/storage.py`, `tests/test_storage.py`)
 
 ## Accomplishments
 - `save_memory(category, content, ...)` is the single public write API every downstream phase will use
@@ -126,7 +126,7 @@ Parser/dumper handle only this subset (everything else rejected with ValueError)
 7. **Post-push fix: path-resolution robustness in one test** — `efc25f3` (fix, Rule 1 deviation)
 
 ## Files Created/Modified
-- `src/cyrus/storage.py` — 386 lines, entire public storage API
+- `src/sekha/storage.py` — 386 lines, entire public storage API
 - `tests/test_storage.py` — 358 lines, 43 tests across 7 TestCase classes
 
 ## Stress Test Observations
@@ -149,10 +149,10 @@ All decisions were specified in 01-CONTEXT.md or the plan's `<action>` block. No
 
 ### Auto-fixed Issues
 
-**1. [Rule 1 - Bug] Made `test_cyrus_home_respected` robust to path resolution**
+**1. [Rule 1 - Bug] Made `test_sekha_home_respected` robust to path resolution**
 - **Found during:** Post-push CI verification (Task 3 follow-up)
-- **Issue:** The test used `str(p).startswith(self._tmp)` to verify files land under the CYRUS_HOME tempdir. On Linux this worked, but CI failed on macOS and Windows:
-  - **macOS:** `tempfile.mkdtemp()` returns `/var/folders/...` but `cyrus_home()` calls `.resolve()` which rewrites `/var` → `/private/var`, so the raw string comparison fails.
+- **Issue:** The test used `str(p).startswith(self._tmp)` to verify files land under the SEKHA_HOME tempdir. On Linux this worked, but CI failed on macOS and Windows:
+  - **macOS:** `tempfile.mkdtemp()` returns `/var/folders/...` but `sekha_home()` calls `.resolve()` which rewrites `/var` → `/private/var`, so the raw string comparison fails.
   - **Windows:** short-name / casing normalization can diverge between the tempdir string and the resolved path.
   - Failed cells: macOS 3.11/3.13, Windows 3.11/3.12/3.13 (5 of 9).
 - **Fix:** Replaced the raw-string comparison with `p.resolve().is_relative_to(Path(self._tmp).resolve())`, which is the real invariant we wanted to assert.
@@ -163,11 +163,11 @@ All decisions were specified in 01-CONTEXT.md or the plan's `<action>` block. No
 ---
 
 **Total deviations:** 1 auto-fixed (Rule 1 bug — flaky test expectation, production code unchanged)
-**Impact on plan:** None. Production code in `cyrus.storage` is byte-identical to what Task 2 shipped. The deviation was discovered only because the plan mandated "push and let CI prove cross-platform correctness" — exactly the control the plan intended.
+**Impact on plan:** None. Production code in `sekha.storage` is byte-identical to what Task 2 shipped. The deviation was discovered only because the plan mandated "push and let CI prove cross-platform correctness" — exactly the control the plan intended.
 
 ## Issues Encountered
 
-- Initial local run (Windows 11) passed all 43 tests, masking the cross-platform issue in `test_cyrus_home_respected` (the test was logically close-enough on Windows but not bulletproof). CI caught it on all non-local cells. One 8-line patch resolved all 5 failing cells with no changes to `src/cyrus/storage.py`.
+- Initial local run (Windows 11) passed all 43 tests, masking the cross-platform issue in `test_sekha_home_respected` (the test was logically close-enough on Windows but not bulletproof). CI caught it on all non-local cells. One 8-line patch resolved all 5 failing cells with no changes to `src/sekha/storage.py`.
 
 ## User Setup Required
 
@@ -175,20 +175,20 @@ None — zero external services, zero credentials, zero new dependencies.
 
 ## Next Phase Readiness
 
-- **Phase 2 (search):** can `from cyrus.storage import parse_frontmatter` to index existing memories and `save_memory` to write the FTS index metadata
+- **Phase 2 (search):** can `from sekha.storage import parse_frontmatter` to index existing memories and `save_memory` to write the FTS index metadata
 - **Phase 3 (rules):** will `save_memory(category="rules", ...)` with compiled-rule pickles referenced in frontmatter
 - **Phase 4 (hook):** reads via `parse_frontmatter`; writes via `save_memory`
-- **Phase 5 (MCP server):** all stdout stays clean because `cyrus.logutil` routes everything to stderr and `save_memory` only emits INFO log lines (also stderr)
+- **Phase 5 (MCP server):** all stdout stays clean because `sekha.logutil` routes everything to stderr and `save_memory` only emits INFO log lines (also stderr)
 
 No blockers. CI will confirm cross-platform correctness on the next push (9 matrix cells: Windows/macOS/Linux × 3.11/3.12/3.13).
 
 ## Self-Check: PASSED
 
-- `src/cyrus/storage.py` exists (386 lines)
+- `src/sekha/storage.py` exists (386 lines)
 - `tests/test_storage.py` exists (358 lines, 43 tests)
 - Commits verified: `24d3104`, `7d31aa3`, `e226178`, `d928aec` all present in `git log`
 - `python -m unittest discover -s tests -v` — 62 tests, OK
-- `python -c "from cyrus.storage import save_memory, parse_frontmatter, dump_frontmatter, atomic_write, filelock, FilelockTimeout, slugify, make_memory_path"` — ok
+- `python -c "from sekha.storage import save_memory, parse_frontmatter, dump_frontmatter, atomic_write, filelock, FilelockTimeout, slugify, make_memory_path"` — ok
 - Smoke test produced file `/sessions/2026-04-12_21394292_end-to-end-smoke.md` matching the required regex
 - `git diff pyproject.toml` is empty (zero-dep constraint intact)
 

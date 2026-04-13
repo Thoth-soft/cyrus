@@ -1,4 +1,4 @@
-# Cyrus v1.1 Roadmap
+# Sekha v1.1 Roadmap
 
 Features deferred from v0.1.0.
 
@@ -7,7 +7,7 @@ Features deferred from v0.1.0.
 **Goal:** Enable rules that consider session history, not just the current tool call.
 
 **Implementation sketch:**
-- Hook writes to `~/.cyrus/session-state/<session_id>.json` on every invocation, recording `{tool_name, tool_input, timestamp}`
+- Hook writes to `~/.sekha/session-state/<session_id>.json` on every invocation, recording `{tool_name, tool_input, timestamp}`
 - Session file pruned on `notifications/initialized` (new session) or after 24h idle
 - Rule frontmatter gets a new optional field `session_condition`:
   ```yaml
@@ -23,15 +23,15 @@ Features deferred from v0.1.0.
 
 **Why warn, not block:** False positives would be too common for block-severity. New files, intentional overwrites, cases where the AI legitimately knows the file from prior context. Warn redirects without punishing.
 
-**Opt-out:** Session-state tracking adds ~5-10ms to hook latency (one file read per call). Disable via `CYRUS_SESSION_TRACKING=0` env var.
+**Opt-out:** Session-state tracking adds ~5-10ms to hook latency (one file read per call). Disable via `SEKHA_SESSION_TRACKING=0` env var.
 
 ## Other v1.1 candidates
 
 - **Auto-save hook** (Stop event triggered) -- save conversation summaries every N messages. Deferred from v0.1.0 because Stop events during complex tasks produce junk memories. v1.1 design needs a better heuristic for "this is a clean breakpoint, save here."
-- **Per-project memory directories** -- `.cyrus/` alongside code, not just `~/.cyrus/`. Workspace-scoped memories.
+- **Per-project memory directories** -- `.sekha/` alongside code, not just `~/.sekha/`. Workspace-scoped memories.
 - **Memory tagging and tag-based search** -- currently tags exist in frontmatter but are not indexed.
 - **Export/import memories** -- zip archive for sharing/backup.
-- **`cyrus pause <rule>` first-class command** -- v0.1.0 uses env var override; v1.1 writes a marker file so pause survives shell restart.
+- **`sekha pause <rule>` first-class command** -- v0.1.0 uses env var override; v1.1 writes a marker file so pause survives shell restart.
 - **`updatedInput` hook output** -- not just block, but rewrite tool inputs (e.g., auto-add `-i` to `rm` to force interactive mode).
 
 ## Explicit non-goals

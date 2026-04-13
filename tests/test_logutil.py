@@ -1,4 +1,4 @@
-"""Tests for cyrus.logutil: stderr-only logger with ISO timestamp format."""
+"""Tests for sekha.logutil: stderr-only logger with ISO timestamp format."""
 
 import io
 import logging
@@ -7,24 +7,24 @@ import sys
 import unittest
 from unittest import mock
 
-from cyrus.logutil import get_logger
+from sekha.logutil import get_logger
 
 
 class TestGetLogger(unittest.TestCase):
     def setUp(self) -> None:
         # Use a unique name per test to avoid cross-test handler leakage
-        self.name = f"cyrus.test.{self._testMethodName}"
-        self._saved_env = os.environ.pop("CYRUS_LOG_LEVEL", None)
+        self.name = f"sekha.test.{self._testMethodName}"
+        self._saved_env = os.environ.pop("SEKHA_LOG_LEVEL", None)
 
     def tearDown(self) -> None:
         # Clean up the logger we created so the process-wide registry stays sane
         logger = logging.getLogger(self.name)
         logger.handlers.clear()
-        if hasattr(logger, "_cyrus_configured"):
-            delattr(logger, "_cyrus_configured")
-        os.environ.pop("CYRUS_LOG_LEVEL", None)
+        if hasattr(logger, "_sekha_configured"):
+            delattr(logger, "_sekha_configured")
+        os.environ.pop("SEKHA_LOG_LEVEL", None)
         if self._saved_env is not None:
-            os.environ["CYRUS_LOG_LEVEL"] = self._saved_env
+            os.environ["SEKHA_LOG_LEVEL"] = self._saved_env
 
     def test_returns_logger(self) -> None:
         self.assertIsInstance(get_logger(self.name), logging.Logger)
@@ -48,14 +48,14 @@ class TestGetLogger(unittest.TestCase):
             # Re-create logger so its handler binds to the patched stderr
             logger = logging.getLogger(self.name)
             logger.handlers.clear()
-            if hasattr(logger, "_cyrus_configured"):
-                delattr(logger, "_cyrus_configured")
+            if hasattr(logger, "_sekha_configured"):
+                delattr(logger, "_sekha_configured")
             logger = get_logger(self.name)
             logger.info("hello")
         out = buf.getvalue().strip()
         pattern = (
             r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\+00:00 "
-            r"INFO cyrus\.test\.test_format_iso_timestamp: hello$"
+            r"INFO sekha\.test\.test_format_iso_timestamp: hello$"
         )
         self.assertRegex(out, pattern)
 
@@ -66,11 +66,11 @@ class TestGetLogger(unittest.TestCase):
         self.assertEqual(get_logger(self.name).level, logging.INFO)
 
     def test_env_level_debug(self) -> None:
-        os.environ["CYRUS_LOG_LEVEL"] = "DEBUG"
+        os.environ["SEKHA_LOG_LEVEL"] = "DEBUG"
         self.assertEqual(get_logger(self.name).level, logging.DEBUG)
 
     def test_env_level_invalid_falls_back_to_info(self) -> None:
-        os.environ["CYRUS_LOG_LEVEL"] = "NOT_A_REAL_LEVEL"
+        os.environ["SEKHA_LOG_LEVEL"] = "NOT_A_REAL_LEVEL"
         self.assertEqual(get_logger(self.name).level, logging.INFO)
 
 

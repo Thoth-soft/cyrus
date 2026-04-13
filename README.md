@@ -1,15 +1,15 @@
-# Cyrus
+# Sekha
 
 Zero-dependency AI memory system with hook-level rules enforcement for Claude Code.
 
-## Why Cyrus?
+## Why Sekha?
 
 Every AI memory system stores rules. None of them enforce them.
 
-Cyrus hooks into Claude Code's PreToolUse event to **actually block** tool calls
+Sekha hooks into Claude Code's PreToolUse event to **actually block** tool calls
 that violate your rules -- the AI cannot bypass this, even with
 `--dangerously-skip-permissions`. Rules live as plain markdown files in
-`~/.cyrus/rules/`, so your enforcement policy is as reviewable as any other
+`~/.sekha/rules/`, so your enforcement policy is as reviewable as any other
 config under version control.
 
 [30-second demo: write rule -> claude tries to run rm -rf -> blocked with message]
@@ -17,34 +17,34 @@ config under version control.
 ## Install
 
 ```bash
-pip install cyrus
-cyrus init
-claude mcp add cyrus -- cyrus serve
+pip install sekha
+sekha init
+claude mcp add sekha -- sekha serve
 ```
 
-`cyrus init` wires the PreToolUse hook into `~/.claude/settings.json` and
-creates `~/.cyrus/` for memories and rules. `cyrus doctor` will verify the
+`sekha init` wires the PreToolUse hook into `~/.claude/settings.json` and
+creates `~/.sekha/` for memories and rules. `sekha doctor` will verify the
 wiring whenever you want a sanity check.
 
 ## Features
 
 - **Persistent memory** across sessions (conversations, decisions, preferences)
-  stored as plain markdown files under `~/.cyrus/`.
+  stored as plain markdown files under `~/.sekha/`.
 - **Rules enforcement** at the hook level -- cannot be bypassed by the AI,
   not even with `--dangerously-skip-permissions`.
 - **Zero dependencies** -- pure Python stdlib, no supply chain surface.
 - **Works with any MCP client** for memory (Claude Code, Cursor, Cline,
   Windsurf). Hook-level rule enforcement is Claude Code exclusive in v0.1.0.
-- **6 MCP tools**: `cyrus_save`, `cyrus_search`, `cyrus_list`, `cyrus_delete`,
-  `cyrus_status`, `cyrus_add_rule`.
-- **CLI**: `cyrus init`, `cyrus doctor`, `cyrus add-rule`, `cyrus list-rules`,
-  `cyrus hook run/bench/enable/disable`, `cyrus serve`.
+- **6 MCP tools**: `sekha_save`, `sekha_search`, `sekha_list`, `sekha_delete`,
+  `sekha_status`, `sekha_add_rule`.
+- **CLI**: `sekha init`, `sekha doctor`, `sekha add-rule`, `sekha list-rules`,
+  `sekha hook run/bench/enable/disable`, `sekha serve`.
 
 ## How It Works
 
-[Diagram: Claude Code -> PreToolUse hook -> cyrus hook run -> rules engine -> block or allow]
+[Diagram: Claude Code -> PreToolUse hook -> sekha hook run -> rules engine -> block or allow]
 
-Three processes, all sharing state under `~/.cyrus/`:
+Three processes, all sharing state under `~/.sekha/`:
 
 1. **MCP server** (long-lived, one per Claude Code session) -- serves the
    memory tools.
@@ -72,15 +72,15 @@ tighten or loosen the pattern.
 
 ## Threat Model
 
-**Cyrus is a consistency enforcer, not a security sandbox.**
+**Sekha is a consistency enforcer, not a security sandbox.**
 
 The AI could bypass a rule by using a different tool -- if you block `Bash`
 with pattern `rm -rf`, the AI could use the `Write` tool to create a deletion
 script and then run it with a tool you did not cover. This is intentional.
-Cyrus scopes rules to `tool_name` deliberately so your policy stays
+Sekha scopes rules to `tool_name` deliberately so your policy stays
 inspectable instead of hiding behind an opaque allowlist.
 
-Cyrus exists to keep the AI honest about *intentions* you have made explicit,
+Sekha exists to keep the AI honest about *intentions* you have made explicit,
 not to prevent a malicious AI from finding creative workarounds. For that,
 use OS-level sandboxing (container, VM, seccomp, etc.).
 

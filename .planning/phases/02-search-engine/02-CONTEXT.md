@@ -7,14 +7,14 @@
 <domain>
 ## Phase Boundary
 
-Deliver `cyrus.search` — a pure-stdlib full-text search built on `os.walk` + `re.compile` with term-frequency × recency × filename-match scoring, ReDoS protection, and benchmarked performance against a synthetic 10k-file corpus. Proves the "grep is good enough" thesis empirically.
+Deliver `sekha.search` — a pure-stdlib full-text search built on `os.walk` + `re.compile` with term-frequency × recency × filename-match scoring, ReDoS protection, and benchmarked performance against a synthetic 10k-file corpus. Proves the "grep is good enough" thesis empirically.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-### Module: `cyrus.search`
+### Module: `sekha.search`
 
 Public API:
 ```python
@@ -53,7 +53,7 @@ class SearchResult:
 
 ### Filtering
 
-- `category=X` filter: restrict `os.walk` to `~/.cyrus/X/` subdirectory
+- `category=X` filter: restrict `os.walk` to `~/.sekha/X/` subdirectory
 - `since=datetime` filter: skip files where `frontmatter.updated < since`
 - `tags=[...]` filter: all tags must appear in `frontmatter.tags` (AND logic)
 
@@ -77,7 +77,7 @@ class SearchResult:
 ### Module Layout
 
 ```
-src/cyrus/
+src/sekha/
     search.py          # public API + scoring
     _searchutil.py     # private: regex guard, snippet extraction, scoring helpers
 tests/
@@ -100,19 +100,19 @@ tests/
 ## Existing Code Insights
 
 ### Reusable Assets
-- `cyrus.paths.cyrus_home()` — home dir resolution
-- `cyrus.storage.parse_frontmatter()` — parse frontmatter to dict (for metadata filtering)
-- `cyrus.storage.CATEGORIES` — the 5 fixed category names (validate `category=` input)
-- `cyrus.logutil.get_logger()` — for ReDoS timeout warnings
+- `sekha.paths.sekha_home()` — home dir resolution
+- `sekha.storage.parse_frontmatter()` — parse frontmatter to dict (for metadata filtering)
+- `sekha.storage.CATEGORIES` — the 5 fixed category names (validate `category=` input)
+- `sekha.logutil.get_logger()` — for ReDoS timeout warnings
 
 ### Established Patterns
 - Stdlib only, no deps
 - `pathlib.Path` only
-- `unittest` tests with `CYRUS_HOME=tempfile.mkdtemp()` isolation
+- `unittest` tests with `SEKHA_HOME=tempfile.mkdtemp()` isolation
 - stderr-only logging
 
 ### Integration Points
-- Phase 5 MCP server's `cyrus_search` tool will call `cyrus.search.search()`
+- Phase 5 MCP server's `sekha_search` tool will call `sekha.search.search()`
 - Phase 4 hook does NOT use search (hook reads rules directly)
 
 </code_context>
@@ -120,7 +120,7 @@ tests/
 <specifics>
 ## Specific Ideas
 
-- Benchmark must run in CI but may be marked `@unittest.skipUnless(os.environ.get('CYRUS_BENCH'), 'bench')` to keep fast CI fast
+- Benchmark must run in CI but may be marked `@unittest.skipUnless(os.environ.get('SEKHA_BENCH'), 'bench')` to keep fast CI fast
 - The 10k-file generator must be deterministic — same seed produces same corpus — so regressions are comparable
 - Case-insensitive search by default; `case_sensitive=True` flag optional for power users
 

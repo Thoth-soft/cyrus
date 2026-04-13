@@ -1,6 +1,6 @@
-"""Private helpers for cyrus.search: ReDoS watchdog + scoring primitives.
+"""Private helpers for sekha.search: ReDoS watchdog + scoring primitives.
 
-This module is private — the public API lives in `cyrus.search`. It owns:
+This module is private — the public API lives in `sekha.search`. It owns:
 - the regex-metachar detection heuristic (is_literal_query) that lets us
   avoid the ReDoS watchdog entirely for plain-substring queries,
 - the 30-day-half-life recency decay and the filename_bonus multiplier that
@@ -10,7 +10,7 @@ This module is private — the public API lives in `cyrus.search`. It owns:
   (e.g. `(a+)+b` against long 'a' runs) at 100ms wall-clock rather than
   letting a single hostile file freeze the whole search.
 
-Stdlib only. All logs go to stderr via cyrus.logutil.get_logger — never
+Stdlib only. All logs go to stderr via sekha.logutil.get_logger — never
 stdout, because the MCP server protocol stream owns stdout.
 """
 from __future__ import annotations
@@ -20,7 +20,7 @@ import re
 import threading
 from pathlib import Path
 
-from cyrus.logutil import get_logger
+from sekha.logutil import get_logger
 
 _log = get_logger(__name__)
 
@@ -210,7 +210,7 @@ def scan_text(
 ) -> tuple[int, bool]:
     """Count occurrences of `query` in already-read `text`.
 
-    Hot path for cyrus.search on a large corpus: the caller has read the
+    Hot path for sekha.search on a large corpus: the caller has read the
     file once (for frontmatter parsing) and compiled the regex once (for
     the whole query) — scan_text avoids both redundancies.
 
@@ -221,7 +221,7 @@ def scan_text(
     path — spawning 10,000 watchdog threads on a 10k-file search is a
     measurable bottleneck and the static _is_catastrophic_pattern check
     already rejects every known dangerous shape up-front. Callers that
-    have *already* pre-rejected catastrophic patterns (see cyrus.search)
+    have *already* pre-rejected catastrophic patterns (see sekha.search)
     can safely disable the watchdog to claim that throughput.
     """
     if is_literal:

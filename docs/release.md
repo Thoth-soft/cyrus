@@ -1,6 +1,6 @@
 # Release Runbook
 
-This document describes how to cut a release of Cyrus. Some steps are
+This document describes how to cut a release of Sekha. Some steps are
 automated via the GitHub release workflow; the final PyPI upload remains a
 user-initiated step because it requires a PyPI API token.
 
@@ -52,8 +52,8 @@ python -m build
 ls dist/
 ```
 
-Expected: a wheel and sdist named `cyrus-0.1.0-*.whl` and
-`cyrus-0.1.0.tar.gz`.
+Expected: a wheel and sdist named `sekha-0.1.0-*.whl` and
+`sekha-0.1.0.tar.gz`.
 
 ## Upload to PyPI (user action)
 
@@ -67,14 +67,14 @@ python -m twine check dist/*
 TWINE_USERNAME=__token__ TWINE_PASSWORD=$PYPI_TOKEN python -m twine upload dist/*
 ```
 
-The first successful upload of `cyrus` also reserves the project name on
+The first successful upload of `sekha` also reserves the project name on
 PyPI (this closes the Phase 0 DOCS-07 / PyPI-name-reservation todo as a side
 effect).
 
 ## Attach artifacts to the GitHub release
 
 ```bash
-gh release upload v0.1.0 dist/cyrus-0.1.0*
+gh release upload v0.1.0 dist/sekha-0.1.0*
 ```
 
 Uploading after `gh release create` keeps the release notes authoritative
@@ -84,7 +84,7 @@ and attaches the wheel + sdist for users who want to grab them without PyPI.
 
 - Bump `pyproject.toml` `version` to the next dev version
   (e.g. `0.1.1.dev0`) on main.
-- Bump `__version__` in `src/cyrus/__init__.py` to match.
+- Bump `__version__` in `src/sekha/__init__.py` to match.
 - Add an empty `## [Unreleased]` section at the top of `CHANGELOG.md` so the
   next round of commits has a home.
 - Open a GitHub milestone for the next version.

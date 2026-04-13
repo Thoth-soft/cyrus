@@ -12,10 +12,10 @@ dependency_graph:
     - "CHANGELOG.md with 0.1.0 entry (Keep a Changelog format)"
     - "examples/rules/ with 4 copy-paste-ready rules"
     - "docs/release.md runbook for PyPI publish"
-    - "v0.1.0 git tag + GitHub release (live at https://github.com/Thoth-soft/cyrus/releases/tag/v0.1.0)"
+    - "v0.1.0 git tag + GitHub release (live at https://github.com/Thoth-soft/sekha/releases/tag/v0.1.0)"
   affects:
     - "pyproject.toml (version: 0.0.0 -> 0.1.0)"
-    - "src/cyrus/__init__.py (__version__: 0.0.0 -> 0.1.0)"
+    - "src/sekha/__init__.py (__version__: 0.0.0 -> 0.1.0)"
     - "CONTRIBUTING.md (em-dash -> ASCII '--' fix)"
     - "tests/test_placeholder.py (unpin hardcoded 0.0.0 version assertion)"
 tech_stack:
@@ -36,7 +36,7 @@ key_files:
     - "README.md"
     - "CONTRIBUTING.md"
     - "pyproject.toml"
-    - "src/cyrus/__init__.py"
+    - "src/sekha/__init__.py"
     - "tests/test_placeholder.py"
 decisions:
   - "ASCII-only README/CHANGELOG: Yes/No in cross-client table instead of Unicode checkmarks (CONTEXT used U+2713/U+2717 but project policy forbids)"
@@ -56,21 +56,21 @@ metrics:
 
 # Phase 7 Plan 01: Polish, Docs, and v0.1.0 Release Summary
 
-Shipped v0.1.0 of Cyrus: rewrote the README with the real pitch and threat
+Shipped v0.1.0 of Sekha: rewrote the README with the real pitch and threat
 model, added a Keep-a-Changelog `CHANGELOG.md`, published 4 copy-paste example
 rules, wrote the release runbook at `docs/release.md`, spot-checked
 `CONTRIBUTING.md`, bumped the package to 0.1.0, and cut the
-[v0.1.0 GitHub release](https://github.com/Thoth-soft/cyrus/releases/tag/v0.1.0).
+[v0.1.0 GitHub release](https://github.com/Thoth-soft/sekha/releases/tag/v0.1.0).
 PyPI upload remains a user-initiated step documented in `docs/release.md`.
 
 ## What Shipped
 
 ### README.md (Task 1 -- DOCS-01, DOCS-02)
 
-Replaced the 13-line Phase 0 skeleton with a full README: Why Cyrus, Install,
+Replaced the 13-line Phase 0 skeleton with a full README: Why Sekha, Install,
 Features, How It Works, Example Rules, Threat Model, Cross-Client Support,
 Docs, Contributing, License. Threat Model opens verbatim with
-"Cyrus is a consistency enforcer, not a security sandbox." Cross-client
+"Sekha is a consistency enforcer, not a security sandbox." Cross-client
 support table uses ASCII `Yes`/`No` instead of Unicode checkmarks (project
 ASCII-only policy overrides the CONTEXT.md template). Links to `examples/rules/`,
 `docs/hook-integration-test.md`, `CHANGELOG.md`, and `CONTRIBUTING.md` all
@@ -90,7 +90,7 @@ claim. Tag URL footnote links the section to the GitHub release.
 ### examples/rules/ (Task 3 -- DOCS-03)
 
 Four copy-paste-ready rule files, all parse cleanly under
-`cyrus.rules.load_rules` in my verification run (4 rules loaded for Bash tool
+`sekha.rules.load_rules` in my verification run (4 rules loaded for Bash tool
 target, ASCII-only, frontmatter on line 1 per RULES-02):
 
 | File                              | Severity | Pattern                                              | Priority |
@@ -128,11 +128,11 @@ with `--`. No structural changes.
 Version bumped in both locations:
 
 - `pyproject.toml` line 7: `0.0.0 -> 0.1.0`
-- `src/cyrus/__init__.py`: `__version__ = "0.1.0"`
+- `src/sekha/__init__.py`: `__version__ = "0.1.0"`
 
 Pushed main, tagged `v0.1.0`, created GitHub release with notes extracted
 from the CHANGELOG `[0.1.0]` section via `awk`. Live URL:
-<https://github.com/Thoth-soft/cyrus/releases/tag/v0.1.0>.
+<https://github.com/Thoth-soft/sekha/releases/tag/v0.1.0>.
 
 - Commits: `9b12aa4 chore(release): bump version to 0.1.0`, `841621d fix(07-01): unpin placeholder test from 0.0.0 version` (retag target)
 
@@ -142,7 +142,7 @@ from the CHANGELOG `[0.1.0]` section via `awk`. Live URL:
 |----------|-------------|----------------------------------------------------------------------|
 | DOCS-01  | Closed      | README has install + features + cross-client + examples link        |
 | DOCS-02  | Closed      | Threat Model section with verbatim opener                            |
-| DOCS-03  | Closed      | 4 rules parse cleanly under `cyrus.rules`                            |
+| DOCS-03  | Closed      | 4 rules parse cleanly under `sekha.rules`                            |
 | DOCS-04  | Closed      | CONTRIBUTING.md carried forward from Phase 0 (ASCII fix only)        |
 | DOCS-05  | Closed      | CHANGELOG.md with Keep-a-Changelog formatted `[0.1.0]` section       |
 | DOCS-06  | Closed      | `v0.1.0` tag pushed to origin, GitHub release published with notes  |
@@ -160,21 +160,21 @@ from the CHANGELOG `[0.1.0]` section via `awk`. Live URL:
 - **Files modified:** `CONTRIBUTING.md`
 - **Commit:** `b40cf0c`
 
-**2. [Rule 1 - Bug] `test_placeholder.test_import_cyrus` hardcoded `__version__ == "0.0.0"`**
+**2. [Rule 1 - Bug] `test_placeholder.test_import_sekha` hardcoded `__version__ == "0.0.0"`**
 
 - **Found during:** Post-release verification (`python -m unittest discover -s tests`) on the version-bump commit.
 - **Issue:** Phase 0 placeholder test coupled itself to the pre-release version string; asserted equality to `"0.0.0"` which broke the moment we bumped to `0.1.0`. GitHub Actions CI confirmed the failure on commit `9b12aa4`.
-- **Fix:** Rewrote the test to assert `cyrus.__version__` is a string matching the semver shape `r"^\d+\.\d+\.\d+"` so future bumps do not regress. Also replaced a U+2014 em-dash in the test docstring with `--`.
+- **Fix:** Rewrote the test to assert `sekha.__version__` is a string matching the semver shape `r"^\d+\.\d+\.\d+"` so future bumps do not regress. Also replaced a U+2014 em-dash in the test docstring with `--`.
 - **Files modified:** `tests/test_placeholder.py`
 - **Commit:** `841621d`
 - **Follow-up:** Moved the `v0.1.0` tag from the broken `9b12aa4` commit to the fixed `841621d` commit (delete + recreate tag, both local and on origin; re-published the GitHub release out of the draft state it entered after the tag delete). CI on `841621d` came back green. Release was minutes old and never promoted externally, so the force-retag was low-risk.
 
-**3. [Rule 2 - Missing Critical Functionality] `src/cyrus/__init__.py` `__version__` bump**
+**3. [Rule 2 - Missing Critical Functionality] `src/sekha/__init__.py` `__version__` bump**
 
 - **Found during:** Plan prep (critical-rules block in prompt mentioned it; plan only mentioned `pyproject.toml`).
-- **Issue:** Two sources of truth for version must stay in sync or `cyrus.__version__` drifts from the PyPI wheel.
+- **Issue:** Two sources of truth for version must stay in sync or `sekha.__version__` drifts from the PyPI wheel.
 - **Fix:** Bumped both in the release-prep commit.
-- **Files modified:** `src/cyrus/__init__.py`
+- **Files modified:** `src/sekha/__init__.py`
 - **Commit:** `9b12aa4`
 
 ### Auth Gates
@@ -192,20 +192,20 @@ passed automated verification before proceeding to Task 7.
 - `grep -c '^## ' README.md`: 10 sections (required 8+)
 - README ASCII-only assertion: pass
 - `python -m unittest discover -s tests`: 337 passed, 3 skipped, 0 failed (after `841621d`)
-- `cyrus.rules.load_rules('examples/rules', 'PreToolUse', 'Bash')`: 4 rules loaded, no parse errors
+- `sekha.rules.load_rules('examples/rules', 'PreToolUse', 'Bash')`: 4 rules loaded, no parse errors
 - `grep 'version = "0.1.0"' pyproject.toml`: match
-- `grep '__version__ = "0.1.0"' src/cyrus/__init__.py`: match
+- `grep '__version__ = "0.1.0"' src/sekha/__init__.py`: match
 - `git tag -l v0.1.0`: `v0.1.0` (local)
 - `gh release view v0.1.0 --json isDraft,body`: `isDraft=false`, body contains `### Added`
 - `gh run list --limit 2 ... 841621d`: status=completed, conclusion=success
-- Release URL: <https://github.com/Thoth-soft/cyrus/releases/tag/v0.1.0>
+- Release URL: <https://github.com/Thoth-soft/sekha/releases/tag/v0.1.0>
 
 ## Next-Step Handoff
 
 v0.1.0 is shippable from source **right now**:
 
 ```bash
-pip install git+https://github.com/Thoth-soft/cyrus.git@v0.1.0
+pip install git+https://github.com/Thoth-soft/sekha.git@v0.1.0
 ```
 
 To publish to PyPI (**user action**, requires `$PYPI_TOKEN`):
@@ -217,11 +217,11 @@ TWINE_USERNAME=__token__ TWINE_PASSWORD=$PYPI_TOKEN python -m twine upload dist/
 ```
 
 Full walkthrough: [`docs/release.md`](../../../docs/release.md). This closes
-DOCS-07 and simultaneously reserves the `cyrus` name on PyPI (Plan 00-02
+DOCS-07 and simultaneously reserves the `sekha` name on PyPI (Plan 00-02
 bonus side effect).
 
 After PyPI upload lands, the install instructions in README.md (`pip install
-cyrus`) start working as advertised.
+sekha`) start working as advertised.
 
 ## Known Stubs
 
@@ -255,7 +255,7 @@ broken embeds.
 - docs/release.md: FOUND
 - CONTRIBUTING.md: FOUND (ASCII-fixed)
 - pyproject.toml: FOUND (version=0.1.0)
-- src/cyrus/__init__.py: FOUND (__version__=0.1.0)
+- src/sekha/__init__.py: FOUND (__version__=0.1.0)
 - tests/test_placeholder.py: FOUND (semver pattern assertion)
 - Commits 6e7380e, 137336e, 2f534e5, f664bd5, b40cf0c, 9b12aa4, 841621d: all FOUND in `git log`
 - Git tag v0.1.0: FOUND (local + origin)

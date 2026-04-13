@@ -1,4 +1,4 @@
-"""Deterministic seeded markdown-corpus generator for Cyrus search benchmarks.
+"""Deterministic seeded markdown-corpus generator for Sekha search benchmarks.
 
 Given a fixed seed and count, produces byte-identical file trees across runs.
 Consumed by tests/test_search_bench.py. Also runnable as a script for manual
@@ -12,14 +12,14 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from cyrus.paths import CATEGORIES
-from cyrus.storage import atomic_write, dump_frontmatter
+from sekha.paths import CATEGORIES
+from sekha.storage import atomic_write, dump_frontmatter
 
 # Fixed vocabulary so queries hit a predictable distribution.
 _VOCAB = (
     "auth", "jwt", "refactor", "database", "migration", "schema",
     "hook", "mcp", "server", "client", "stdio", "protocol", "rules",
-    "cyrus", "memory", "search", "storage", "index", "benchmark",
+    "sekha", "memory", "search", "storage", "index", "benchmark",
     "python", "stdlib", "pathlib", "regex", "frontmatter", "markdown",
     "windows", "linux", "macos", "encoding", "unicode", "atomic",
     "concurrent", "filelock", "msvcrt", "fcntl", "ci", "test",
@@ -103,14 +103,14 @@ def generate_corpus(out_dir: Path, *, count: int, seed: int) -> int:
 
 def _main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Generate a deterministic Cyrus markdown corpus."
+        description="Generate a deterministic Sekha markdown corpus."
     )
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--count", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=0xC0FFEE)
     args = parser.parse_args(argv)
     n = generate_corpus(args.out, count=args.count, seed=args.seed)
-    # stderr only — stdout is reserved for protocol output elsewhere in Cyrus
+    # stderr only — stdout is reserved for protocol output elsewhere in Sekha
     print(f"wrote {n} files under {args.out}", file=sys.stderr)
     return 0
 

@@ -1,4 +1,4 @@
-"""Tests for cyrus.storage: atomic writes, filelock, slugify, make_memory_path.
+"""Tests for sekha.storage: atomic writes, filelock, slugify, make_memory_path.
 
 Task 1 of Plan 01-02 — RED stage covers the primitives. Frontmatter and
 save_memory + the 100-parallel-write stress test arrive in Task 2.
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
 
-from cyrus.storage import (
+from sekha.storage import (
     FilelockTimeout,
     atomic_write,
     dump_frontmatter,
@@ -30,15 +30,15 @@ from cyrus.storage import (
 
 class _TempHomeMixin:
     def setUp(self):
-        self._tmp = tempfile.mkdtemp(prefix="cyrus-test-")
-        self._saved = os.environ.get("CYRUS_HOME")
-        os.environ["CYRUS_HOME"] = self._tmp
+        self._tmp = tempfile.mkdtemp(prefix="sekha-test-")
+        self._saved = os.environ.get("SEKHA_HOME")
+        os.environ["SEKHA_HOME"] = self._tmp
 
     def tearDown(self):
         if self._saved is None:
-            os.environ.pop("CYRUS_HOME", None)
+            os.environ.pop("SEKHA_HOME", None)
         else:
-            os.environ["CYRUS_HOME"] = self._saved
+            os.environ["SEKHA_HOME"] = self._saved
         # Best-effort cleanup; Windows may hold lock files briefly
         import shutil
         shutil.rmtree(self._tmp, ignore_errors=True)
@@ -123,7 +123,7 @@ class TestAtomicWrite(_TempHomeMixin, unittest.TestCase):
     def test_failure_does_not_corrupt_destination(self):
         p = Path(self._tmp) / "a.txt"
         atomic_write(p, "original")
-        with mock.patch("cyrus.storage.os.replace", side_effect=OSError("boom")):
+        with mock.patch("sekha.storage.os.replace", side_effect=OSError("boom")):
             with self.assertRaises(OSError):
                 atomic_write(p, "NEW")
         # Original content preserved
@@ -197,7 +197,7 @@ class TestFilelock(_TempHomeMixin, unittest.TestCase):
 
     def test_platform_primitive_selected(self):
         # Sanity check: the correct module is imported based on platform
-        import cyrus.storage as s
+        import sekha.storage as s
         if sys.platform == "win32":
             self.assertTrue(hasattr(s, "msvcrt") or "msvcrt" in sys.modules)
         else:
@@ -307,7 +307,7 @@ class TestSaveMemory(_TempHomeMixin, unittest.TestCase):
         with self.assertRaises(ValueError):
             save_memory("garbage", "x")
 
-    def test_cyrus_home_respected(self):
+    def test_sekha_home_respected(self):
         p = save_memory("rules", "content", title="Rule X")
         # Compare resolved paths: macOS resolves /var -> /private/var, and
         # Windows may normalize casing or short-name forms, so raw string

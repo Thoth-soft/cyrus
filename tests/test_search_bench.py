@@ -1,11 +1,11 @@
-"""10,000-file search latency benchmark for Cyrus.
+"""10,000-file search latency benchmark for Sekha.
 
-Gated by the CYRUS_BENCH env var so fast CI stays fast. To run:
-    CYRUS_BENCH=1 python -m unittest tests.test_search_bench -v
+Gated by the SEKHA_BENCH env var so fast CI stays fast. To run:
+    SEKHA_BENCH=1 python -m unittest tests.test_search_bench -v
 
 Asserts p95 search latency < 500ms on a deterministic 10k-file corpus.
 Corpus lives in a per-run temp dir (cold) or an override path via
-CYRUS_BENCH_CORPUS (warm, reused across invocations for local dev).
+SEKHA_BENCH_CORPUS (warm, reused across invocations for local dev).
 """
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ import time
 import unittest
 from pathlib import Path
 
-from cyrus.search import search
+from sekha.search import search
 from tests.fixtures.generate_corpus import generate_corpus
 
-_BENCH_ENABLED = bool(os.environ.get("CYRUS_BENCH"))
+_BENCH_ENABLED = bool(os.environ.get("SEKHA_BENCH"))
 _CORPUS_COUNT = 10_000
 _CORPUS_SEED = 0xC0FFEE  # locked — changing this invalidates historical perf numbers
 
@@ -32,22 +32,22 @@ _CORPUS_SEED = 0xC0FFEE  # locked — changing this invalidates historical perf 
 # warm-cache with nothing else running — below that number is physically
 # unreachable without an index (SQLite FTS5, deferred to v1.x per CONTEXT).
 #
-# Override via CYRUS_BENCH_P95_MS if you want to enforce a tighter budget
+# Override via SEKHA_BENCH_P95_MS if you want to enforce a tighter budget
 # on a specific environment (e.g., the performance CI job should set this
 # to 500 on its Linux runner to catch regressions against the design spec).
 _P95_BUDGET_MS = float(
     os.environ.get(
-        "CYRUS_BENCH_P95_MS",
+        "SEKHA_BENCH_P95_MS",
         "1500" if sys.platform == "win32" else "500",
     )
 )
 
 # Query workload: literal, regex, category-filtered, tag-filtered, miss.
-# Each entry exercises a distinct code path in cyrus.search so the benchmark
+# Each entry exercises a distinct code path in sekha.search so the benchmark
 # applies uniform pressure to the whole public surface.
 _QUERIES = [
     {"query": "jwt"},                           # literal, common
-    {"query": "cyrus"},                         # literal, very common
+    {"query": "sekha"},                         # literal, very common
     {"query": "h.ok"},                          # regex path (dot metachar)
     {"query": "auth", "category": "rules"},     # category-filtered
     {"query": "schema", "tags": ["storage"]},   # tag-filtered
@@ -55,22 +55,22 @@ _QUERIES = [
 ]
 
 
-@unittest.skipUnless(_BENCH_ENABLED, "Set CYRUS_BENCH=1 to run benchmark")
+@unittest.skipUnless(_BENCH_ENABLED, "Set SEKHA_BENCH=1 to run benchmark")
 class SearchBenchmark(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         # Use a reusable corpus dir if caller provides one, else tempdir.
-        override = os.environ.get("CYRUS_BENCH_CORPUS")
+        override = os.environ.get("SEKHA_BENCH_CORPUS")
         if override:
             cls._corpus_dir = Path(override)
             cls._cleanup = False
         else:
-            cls._corpus_dir = Path(tempfile.mkdtemp(prefix="cyrus-bench-"))
+            cls._corpus_dir = Path(tempfile.mkdtemp(prefix="sekha-bench-"))
             cls._cleanup = True
 
-        cls._old_home = os.environ.get("CYRUS_HOME")
-        os.environ["CYRUS_HOME"] = str(cls._corpus_dir)
+        cls._old_home = os.environ.get("SEKHA_HOME")
+        os.environ["SEKHA_HOME"] = str(cls._corpus_dir)
 
         t0 = time.monotonic()
         written = generate_corpus(
@@ -90,9 +90,9 @@ class SearchBenchmark(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         if cls._old_home is None:
-            os.environ.pop("CYRUS_HOME", None)
+            os.environ.pop("SEKHA_HOME", None)
         else:
-            os.environ["CYRUS_HOME"] = cls._old_home
+            os.environ["SEKHA_HOME"] = cls._old_home
         if cls._cleanup:
             shutil.rmtree(cls._corpus_dir, ignore_errors=True)
 

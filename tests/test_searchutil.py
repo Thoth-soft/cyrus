@@ -1,7 +1,7 @@
-"""Tests for cyrus._searchutil: scoring helpers, snippet extraction, ReDoS guard.
+"""Tests for sekha._searchutil: scoring helpers, snippet extraction, ReDoS guard.
 
 Task 1 of Plan 02-01 — RED stage. These tests MUST fail initially because
-cyrus._searchutil does not exist yet. Task 2 implements the module.
+sekha._searchutil does not exist yet. Task 2 implements the module.
 
 Covers:
 - is_literal_query: metachar detection
@@ -19,7 +19,7 @@ import time
 import unittest
 from pathlib import Path
 
-from cyrus import _searchutil  # noqa: F401 — import must succeed post-RED
+from sekha import _searchutil  # noqa: F401 — import must succeed post-RED
 
 
 class TestIsLiteralQuery(unittest.TestCase):
@@ -160,7 +160,7 @@ class TestExtractSnippet(unittest.TestCase):
 
 class TestScanFileWithTimeout(unittest.TestCase):
     def setUp(self):
-        self._tmp = tempfile.mkdtemp(prefix="cyrus-searchutil-")
+        self._tmp = tempfile.mkdtemp(prefix="sekha-searchutil-")
 
     def tearDown(self):
         import shutil

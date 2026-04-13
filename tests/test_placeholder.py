@@ -11,11 +11,11 @@ class TestPlaceholder(unittest.TestCase):
         """Verify test infrastructure works."""
         self.assertTrue(True)
 
-    def test_import_cyrus(self):
-        """Verify the cyrus package is importable and advertises a semver version."""
-        import cyrus
-        self.assertIsInstance(cyrus.__version__, str)
-        self.assertRegex(cyrus.__version__, r"^\d+\.\d+\.\d+")
+    def test_import_sekha(self):
+        """Verify the sekha package is importable and advertises a semver version."""
+        import sekha
+        self.assertIsInstance(sekha.__version__, str)
+        self.assertRegex(sekha.__version__, r"^\d+\.\d+\.\d+")
 
 
 if __name__ == "__main__":

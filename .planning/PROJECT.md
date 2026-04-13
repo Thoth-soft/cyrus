@@ -1,12 +1,12 @@
-# Cyrus
+# Sekha
 
 ## What This Is
 
-Cyrus is a zero-dependency AI memory system for developers using Claude Code, Cursor, and other MCP-compatible AI tools. It gives your AI persistent memory across sessions — conversations, decisions, preferences — stored as plain markdown files you can read, grep, git-track, and edit by hand. The anti-MemPalace: same core value proposition, 1% of the complexity.
+Sekha is a zero-dependency AI memory system for developers using Claude Code, Cursor, and other MCP-compatible AI tools. It gives your AI persistent memory across sessions — conversations, decisions, preferences — stored as plain markdown files you can read, grep, git-track, and edit by hand. The anti-MemPalace: same core value proposition, 1% of the complexity.
 
 ## Core Value
 
-**The AI actually follows rules you give it.** Rules enforcement is enforced at the system level via PreToolUse hooks, not relying on the AI to "remember." Memory + enforcement in one system. If this works and nothing else does, Cyrus succeeds.
+**The AI actually follows rules you give it.** Rules enforcement is enforced at the system level via PreToolUse hooks, not relying on the AI to "remember." Memory + enforcement in one system. If this works and nothing else does, Sekha succeeds.
 
 ## Requirements
 
@@ -23,7 +23,7 @@ Cyrus is a zero-dependency AI memory system for developers using Claude Code, Cu
 - [ ] **Rules enforcement system** — store mandatory AI directives that get injected before every tool call via PreToolUse hook
 - [ ] MCP server exposing 4-6 tools (save, search, list, delete, status, add-rule)
 - [ ] Auto-save hook that fires every N messages (configurable)
-- [ ] One-command setup: `pip install cyrus-memory && cyrus init && claude mcp add cyrus`
+- [ ] One-command setup: `pip install sekha-memory && sekha init && claude mcp add sekha`
 - [ ] Cross-platform (Windows, macOS, Linux) — tested on all three
 - [ ] Python stdlib only (no chromadb, no numpy, no tokenizers, no ML models)
 - [ ] Open source on GitHub with clear README, examples, and contribution guide
@@ -43,7 +43,7 @@ Cyrus is a zero-dependency AI memory system for developers using Claude Code, Cu
 
 **Why this exists:** We tried MemPalace (github.com/milla-jovovich/mempalace). Great pitch — AI memory that persists across sessions, 96.6% LongMemEval recall, local-only, free. Reality: ~60 pip dependencies, 167MB ChromaDB cache, custom "AAAK" compression dialect, 19 MCP tools, custom JSON-RPC protocol that required a wrapper to connect to Claude Code. Installation took ~20 minutes of debugging. The palace metaphor (wings, rooms, halls, tunnels, closets, drawers) added cognitive overhead without clear benefit. It worked eventually, but the effort-to-value ratio was poor.
 
-**The bigger insight:** AI assistants read rules then ignore them. Memory systems store preferences but don't enforce them. We repeatedly had incidents where feedback memories ("always confirm before action") were written but violated anyway. The missing piece is **enforcement**, not storage. Cyrus's differentiator is a rules system that runs at the hook level — the AI literally cannot bypass it because the system blocks tool calls that violate active rules.
+**The bigger insight:** AI assistants read rules then ignore them. Memory systems store preferences but don't enforce them. We repeatedly had incidents where feedback memories ("always confirm before action") were written but violated anyway. The missing piece is **enforcement**, not storage. Sekha's differentiator is a rules system that runs at the hook level — the AI literally cannot bypass it because the system blocks tool calls that violate active rules.
 
 **Target users:** Solo developers and small teams using Claude Code (primary), Cursor, Cline, and other MCP-compatible AI coding tools. Users who want AI memory without a database, without a cloud service, without a custom query language. Users who have been burned by AI forgetting their preferences mid-session.
 
@@ -63,14 +63,14 @@ Cyrus is a zero-dependency AI memory system for developers using Claude Code, Cu
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Name: "Cyrus" | Short, memorable, brain metaphor, not already taken in this space | — Pending |
+| Name: "Sekha" | Short, memorable, brain metaphor, not already taken in this space | — Pending |
 | Plain markdown files over SQLite/ChromaDB | Zero deps, git-trackable, human-readable, grep-searchable | — Pending |
 | Grep-based search over semantic search | Zero deps, fast enough, good enough for most queries | — Pending |
 | Rules enforcement as a core feature (not optional) | This is the key differentiator from MemPalace and every other memory system | — Pending |
 | PreToolUse hook for rule enforcement | Only way to actually block the AI from violating rules | — Pending |
 | Python stdlib only | Installation must not fail; every dep is a risk | — Pending |
 | Newline-delimited JSON-RPC (not Content-Length) | Claude Code uses this; confirmed via MemPalace debugging | — Pending |
-| GitHub repo at github.com/Mo-Hendawy/cyrus | User's account, open source, MIT | — Pending |
+| GitHub repo at github.com/Mo-Hendawy/sekha | User's account, open source, MIT | — Pending |
 
 ## Evolution
 

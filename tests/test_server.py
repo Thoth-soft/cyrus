@@ -1,10 +1,10 @@
-"""Tests for cyrus.server: handle_request dispatcher + CLI `serve` subcommand.
+"""Tests for sekha.server: handle_request dispatcher + CLI `serve` subcommand.
 
 Plan 05-02 Task 1 (TestHandleRequest + TestCli): in-process unit tests for
 the pure dict-in/dict-out dispatcher and argparse wiring.
 
 Plan 05-02 Task 2 (TestServerSubprocess): subprocess integration tests that
-spawn real `python -m cyrus.cli serve` processes over pipes and drive the
+spawn real `python -m sekha.cli serve` processes over pipes and drive the
 full JSON-RPC handshake. These catch the class of bugs that killed
 MemPalace — stdout buffering, Content-Length drift, Windows CRLF
 translation, stray prints from tool-handler imports — because those bugs
@@ -22,17 +22,17 @@ import threading
 import unittest
 from pathlib import Path
 
-from cyrus.jsonrpc import (
+from sekha.jsonrpc import (
     ACCEPTED_PROTOCOL_VERSIONS,
     INVALID_REQUEST,
     METHOD_NOT_FOUND,
     PARSE_ERROR,
 )
-from cyrus.server import handle_request
+from sekha.server import handle_request
 
 
 class TestHandleRequest(unittest.TestCase):
-    """Pure-function tests for cyrus.server.handle_request."""
+    """Pure-function tests for sekha.server.handle_request."""
 
     # ------------------------------------------------------------------
     # 1. initialize echoes protocolVersion
@@ -54,7 +54,7 @@ class TestHandleRequest(unittest.TestCase):
         self.assertEqual(resp["id"], 1)
         self.assertIn("result", resp)
         self.assertEqual(resp["result"]["protocolVersion"], "2025-03-26")
-        self.assertEqual(resp["result"]["serverInfo"]["name"], "cyrus")
+        self.assertEqual(resp["result"]["serverInfo"]["name"], "sekha")
         self.assertIn("version", resp["result"]["serverInfo"])
         self.assertEqual(resp["result"]["capabilities"], {"tools": {}})
 
@@ -104,7 +104,7 @@ class TestHandleRequest(unittest.TestCase):
         self.assertIsNone(resp)
 
     # ------------------------------------------------------------------
-    # 5. tools/list returns six cyrus_*-prefixed tools
+    # 5. tools/list returns six sekha_*-prefixed tools
     # ------------------------------------------------------------------
     def test_tools_list_returns_six_tools(self):
         req = {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
@@ -115,36 +115,36 @@ class TestHandleRequest(unittest.TestCase):
         self.assertEqual(len(tools), 6)
         for t in tools:
             self.assertTrue(
-                t["name"].startswith("cyrus_"),
-                f"tool name {t['name']} does not start with cyrus_",
+                t["name"].startswith("sekha_"),
+                f"tool name {t['name']} does not start with sekha_",
             )
 
     # ------------------------------------------------------------------
-    # 6. tools/call cyrus_status success — round-trips a handler result
+    # 6. tools/call sekha_status success — round-trips a handler result
     # ------------------------------------------------------------------
-    def test_tools_call_cyrus_status_success(self):
+    def test_tools_call_sekha_status_success(self):
         import json as _json
 
-        with tempfile.TemporaryDirectory(prefix="cyrus-srv-test-") as td:
+        with tempfile.TemporaryDirectory(prefix="sekha-srv-test-") as td:
             home = Path(td)
-            # Stage the five categories that cyrus_status walks.
+            # Stage the five categories that sekha_status walks.
             for cat in ("sessions", "decisions", "preferences", "projects", "rules"):
                 (home / cat).mkdir()
-            saved_home = os.environ.get("CYRUS_HOME")
-            os.environ["CYRUS_HOME"] = str(home)
+            saved_home = os.environ.get("SEKHA_HOME")
+            os.environ["SEKHA_HOME"] = str(home)
             try:
                 req = {
                     "jsonrpc": "2.0",
                     "id": 3,
                     "method": "tools/call",
-                    "params": {"name": "cyrus_status", "arguments": {}},
+                    "params": {"name": "sekha_status", "arguments": {}},
                 }
                 resp = handle_request(req)
             finally:
                 if saved_home is None:
-                    os.environ.pop("CYRUS_HOME", None)
+                    os.environ.pop("SEKHA_HOME", None)
                 else:
-                    os.environ["CYRUS_HOME"] = saved_home
+                    os.environ["SEKHA_HOME"] = saved_home
 
             self.assertIsNotNone(resp)
             self.assertIn("result", resp)
@@ -162,7 +162,7 @@ class TestHandleRequest(unittest.TestCase):
             "jsonrpc": "2.0",
             "id": 4,
             "method": "tools/call",
-            "params": {"name": "cyrus_bogus", "arguments": {}},
+            "params": {"name": "sekha_bogus", "arguments": {}},
         }
         resp = handle_request(req)
         self.assertIsNotNone(resp)
@@ -173,22 +173,22 @@ class TestHandleRequest(unittest.TestCase):
     # 8. tools/call handler exception returns isError (NOT JSON-RPC error)
     # ------------------------------------------------------------------
     def test_tools_call_handler_exception_returns_is_error(self):
-        from cyrus import tools as _tools
+        from sekha import tools as _tools
 
-        saved = _tools.HANDLERS["cyrus_status"]
+        saved = _tools.HANDLERS["sekha_status"]
         def boom(**_kwargs):
             raise RuntimeError("boom")
-        _tools.HANDLERS["cyrus_status"] = boom
+        _tools.HANDLERS["sekha_status"] = boom
         try:
             req = {
                 "jsonrpc": "2.0",
                 "id": 5,
                 "method": "tools/call",
-                "params": {"name": "cyrus_status", "arguments": {}},
+                "params": {"name": "sekha_status", "arguments": {}},
             }
             resp = handle_request(req)
         finally:
-            _tools.HANDLERS["cyrus_status"] = saved
+            _tools.HANDLERS["sekha_status"] = saved
 
         self.assertIsNotNone(resp)
         self.assertIn("result", resp)
@@ -247,20 +247,20 @@ class TestHandleRequest(unittest.TestCase):
 
 
 class TestCli(unittest.TestCase):
-    """Verify `cyrus serve` subcommand is wired into the argparse tree."""
+    """Verify `sekha serve` subcommand is wired into the argparse tree."""
 
     def test_cli_serve_subcommand_registered(self):
-        from cyrus.cli import _build_parser
+        from sekha.cli import _build_parser
         parser = _build_parser()
         args = parser.parse_args(["serve"])
         self.assertEqual(args.command, "serve")
 
 
 class TestServerSubprocess(unittest.TestCase):
-    """Integration tests: spawn `python -m cyrus.cli serve` over pipes.
+    """Integration tests: spawn `python -m sekha.cli serve` over pipes.
 
-    Every test stages a fresh CYRUS_HOME tempdir with the five memory
-    categories pre-created so cyrus_status and friends walk a complete
+    Every test stages a fresh SEKHA_HOME tempdir with the five memory
+    categories pre-created so sekha_status and friends walk a complete
     filesystem layout. Pipes run in binary mode (bufsize=0, text=False)
     so the Windows msvcrt.setmode binary path in harden_stdio is
     actually exercised and the test encodes/decodes UTF-8 framing bytes
@@ -275,14 +275,14 @@ class TestServerSubprocess(unittest.TestCase):
     _SHUTDOWN_TIMEOUT = 5.0
 
     def setUp(self):
-        self._td = tempfile.TemporaryDirectory(prefix="cyrus-srv-sp-")
+        self._td = tempfile.TemporaryDirectory(prefix="sekha-srv-sp-")
         self.home = Path(self._td.name)
         for cat in ("sessions", "decisions", "preferences", "projects", "rules"):
             (self.home / cat).mkdir()
         # Seed env for every spawn in this test — isolates from the user's
-        # real ~/.cyrus/. Copied rather than mutated so parallel test
-        # invocations can't stomp each other's CYRUS_HOME.
-        self._env = {**os.environ, "CYRUS_HOME": str(self.home)}
+        # real ~/.sekha/. Copied rather than mutated so parallel test
+        # invocations can't stomp each other's SEKHA_HOME.
+        self._env = {**os.environ, "SEKHA_HOME": str(self.home)}
         self._procs: list[subprocess.Popen] = []
 
     def tearDown(self):
@@ -312,7 +312,7 @@ class TestServerSubprocess(unittest.TestCase):
         same harden_stdio codepath Claude Code hits (real file descriptors,
         binary mode on Windows) and control newline translation ourselves.
         """
-        cmd = argv if argv is not None else [sys.executable, "-m", "cyrus.cli", "serve"]
+        cmd = argv if argv is not None else [sys.executable, "-m", "sekha.cli", "serve"]
         proc = subprocess.Popen(
             cmd,
             stdin=subprocess.PIPE,
@@ -379,7 +379,7 @@ class TestServerSubprocess(unittest.TestCase):
 
     # ------------------------------------------------------------------
     # 15. Full happy-path handshake: initialize -> initialized -> tools/list
-    #     -> tools/call cyrus_status -> graceful shutdown
+    #     -> tools/call sekha_status -> graceful shutdown
     # ------------------------------------------------------------------
     def test_full_handshake_plus_tools_list_plus_status(self):
         proc = self._spawn_server()
@@ -395,7 +395,7 @@ class TestServerSubprocess(unittest.TestCase):
             },
         })
         self.assertEqual(init_resp["result"]["protocolVersion"], "2025-03-26")
-        self.assertEqual(init_resp["result"]["serverInfo"]["name"], "cyrus")
+        self.assertEqual(init_resp["result"]["serverInfo"]["name"], "sekha")
 
         # notifications/initialized — no response expected.
         self._rpc(proc, {
@@ -409,11 +409,11 @@ class TestServerSubprocess(unittest.TestCase):
         tools = list_resp["result"]["tools"]
         self.assertEqual(len(tools), 6)
         for t in tools:
-            self.assertTrue(t["name"].startswith("cyrus_"))
+            self.assertTrue(t["name"].startswith("sekha_"))
 
         status_resp = self._rpc(proc, {
             "jsonrpc": "2.0", "id": 3, "method": "tools/call",
-            "params": {"name": "cyrus_status", "arguments": {}},
+            "params": {"name": "sekha_status", "arguments": {}},
         })
         content = status_resp["result"]["content"]
         self.assertEqual(content[0]["type"], "text")
@@ -485,25 +485,25 @@ class TestServerSubprocess(unittest.TestCase):
     #     (the killer test — proves harden_stdio works under real process)
     # ------------------------------------------------------------------
     def test_stray_print_in_handler_does_not_corrupt_protocol_stream(self):
-        # Shim: monkeypatch cyrus.tools.HANDLERS["cyrus_status"] to print
+        # Shim: monkeypatch sekha.tools.HANDLERS["sekha_status"] to print
         # to stdout BEFORE returning the real status. Without harden_stdio,
         # that print would land on protocol stdout and corrupt the frame.
         shim = textwrap.dedent(
             """
-            import cyrus.tools as t
-            _orig = t.cyrus_status
+            import sekha.tools as t
+            _orig = t.sekha_status
             def noisy(**kwargs):
                 print("OOPS pollution on stdout")  # would kill MemPalace
                 return _orig(**kwargs)
-            t.cyrus_status = noisy
-            t.HANDLERS["cyrus_status"] = noisy
-            from cyrus.server import main
+            t.sekha_status = noisy
+            t.HANDLERS["sekha_status"] = noisy
+            from sekha.server import main
             raise SystemExit(main())
             """
         )
         proc = self._spawn_server([sys.executable, "-c", shim])
 
-        # Handshake then call cyrus_status.
+        # Handshake then call sekha_status.
         self._rpc(proc, {
             "jsonrpc": "2.0", "id": 1, "method": "initialize",
             "params": {"protocolVersion": "2025-03-26", "capabilities": {}},
@@ -512,7 +512,7 @@ class TestServerSubprocess(unittest.TestCase):
 
         resp = self._rpc(proc, {
             "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-            "params": {"name": "cyrus_status", "arguments": {}},
+            "params": {"name": "sekha_status", "arguments": {}},
         })
         # Assertion 1: response parses as a well-formed JSON-RPC result —
         # NOT the "OOPS pollution" string. This proves stdout wasn't

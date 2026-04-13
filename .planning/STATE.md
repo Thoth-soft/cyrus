@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 ## Current Position
 
 Phase: 1 (Storage Foundation) — EXECUTING
-Plan: 2 of 2 (01-02: cyrus.storage atomic write + frontmatter + filelock)
+Plan: 2 of 2 (01-02: sekha.storage atomic write + frontmatter + filelock)
 Status: Phase complete — ready for verification
 Last activity: 2026-04-13
 
@@ -71,12 +71,12 @@ Progress: [█░░░░░░░░░] 12%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Phase 0]: Two blockers must be resolved before any code is written: (a) pick a real PyPI name from the available shortlist (`cyrus-cc`, `cyrus-hook`, `cyrus-rules`, or rename); (b) bump Python minimum from 3.9 to 3.11 (3.9 EOL Oct 2025).
+- [Phase 0]: Two blockers must be resolved before any code is written: (a) pick a real PyPI name from the available shortlist (`sekha-cc`, `sekha-hook`, `sekha-rules`, or rename); (b) bump Python minimum from 3.9 to 3.11 (3.9 EOL Oct 2025).
 - [Roadmap]: Hook ships in Phase 4, before the MCP server in Phase 5. The hook is the differentiator and must be dogfooded early — failing here saves the whole project.
 - [Roadmap]: Phase 0 is a non-code decision gate. Success criteria are "decisions logged + names reserved + scaffolding exists," not "tests pass."
-- [Phase 1 / 01-01]: `cyrus_home()` reads `CYRUS_HOME` on every call (no caching) so per-test overrides work without module reload.
-- [Phase 1 / 01-01]: `cyrus.logutil` does not import from `cyrus.paths` — keeps the two foundation modules orthogonal so future MCP boot-lint can touch logutil without HOME/FS.
-- [Phase 1 / 01-01]: Invalid `CYRUS_LOG_LEVEL` falls back to INFO silently — loud config errors would break tools invoked with odd envs.
+- [Phase 1 / 01-01]: `sekha_home()` reads `SEKHA_HOME` on every call (no caching) so per-test overrides work without module reload.
+- [Phase 1 / 01-01]: `sekha.logutil` does not import from `sekha.paths` — keeps the two foundation modules orthogonal so future MCP boot-lint can touch logutil without HOME/FS.
+- [Phase 1 / 01-01]: Invalid `SEKHA_LOG_LEVEL` falls back to INFO silently — loud config errors would break tools invoked with odd envs.
 - [Phase 01-storage-foundation]: blake2b(digest_size=4) for filename IDs: stdlib, deterministic, 8 hex chars
 - [Phase 01-storage-foundation]: Platform filelock primitive chosen at IMPORT time via sys.platform gate
 - [Phase 01-storage-foundation]: Lock files intentionally never deleted on release — race-safe
@@ -90,20 +90,20 @@ Recent decisions affecting current work:
 - [Phase 03]: assertLogs over contextlib.redirect_stderr for logger-output capture — StreamHandler binds sys.stderr at configure time
 - [Phase 03]: Tuple-typed triggers/matches in Rule dataclass so frozen dataclass is hashable
 - [Phase 04-pretool-hook]: Kill-switch SoT is the error-log tail (_KILL_WINDOW_SECONDS=600, _KILL_THRESHOLD=3). No side counter — file is the truth, crash-safe, zero extra I/O.
-- [Phase 04-pretool-hook]: hook.py module-top imports restricted to {sys, json, __future__}; ast-introspection test enforces it structurally. Every cyrus.* import lives inside _run().
+- [Phase 04-pretool-hook]: hook.py module-top imports restricted to {sys, json, __future__}; ast-introspection test enforces it structurally. Every sekha.* import lives inside _run().
 - [Phase 04-pretool-hook]: CLI entry reconfigures stdout+stderr to utf-8/replace (Pitfall 4 fix, Rule 2 deviation) — defense-in-depth against future non-ASCII help text.
 - [Phase 04-pretool-hook]: Hook bench is subprocess-based (not in-process) — only way to honestly measure Python cold-start Claude Code pays per tool call
-- [Phase 04-pretool-hook]: Windows CI needs CYRUS_HOOK_P50_MS=200 CYRUS_HOOK_P95_MS=300 overrides (Python cold-start floor ~130ms on Win11)
+- [Phase 04-pretool-hook]: Windows CI needs SEKHA_HOOK_P50_MS=200 SEKHA_HOOK_P95_MS=300 overrides (Python cold-start floor ~130ms on Win11)
 - [Phase 04-pretool-hook]: HOOK-10 shipped as documented manual runbook (docs/hook-integration-test.md); automated headless-Claude-Code integration test deferred to v2
 - [Phase 05-mcp-server]: JsonRpcError subclasses ValueError with .code attribute — keeps server-loop catch surface trivial
-- [Phase 05-mcp-server]: cyrus_delete is scope-checked via Path.relative_to(cyrus_home()) — refuses arbitrary FS access by design
+- [Phase 05-mcp-server]: sekha_delete is scope-checked via Path.relative_to(sekha_home()) — refuses arbitrary FS access by design
 - [Phase 05-mcp-server]: harden_stdio returns TextIOWrapper(write_through=True) over real-stdout.buffer — any buffering hangs Claude Code's blocking readline
 - [Phase 05-mcp-server]: Unknown protocolVersion falls back to _PREFERRED_VERSION=2025-03-26; handshake never errors on version mismatch
 - [Phase 05-mcp-server]: Unknown tool name -> JSON-RPC METHOD_NOT_FOUND; handler exception -> MCP isError; handler TypeError -> INVALID_PARAMS
 - [Phase 05-mcp-server]: Subprocess tests use bufsize=0 + text=False to exercise real Windows msvcrt binary-mode fd path
-- [Phase 06-cli-install]: Each CLI subcommand split into cyrus._<name> module; cli.py stays a lazy-import argparse router
+- [Phase 06-cli-install]: Each CLI subcommand split into sekha._<name> module; cli.py stays a lazy-import argparse router
 - [Phase 06-cli-install]: merge_claude_settings deep-copies on entry; scans every nested hooks[*].command for idempotency; never mutates input
-- [Phase 06-cli-install]: cyrus doctor recent_hook_errors is informational (ok=True); kill_switch is the authoritative failure signal
+- [Phase 06-cli-install]: sekha doctor recent_hook_errors is informational (ok=True); kill_switch is the authoritative failure signal
 - [Phase 06-cli-install]: add-rule validates regex via _compile_rule_pattern BEFORE any filesystem write; bad pattern leaves zero side effects
 - [Phase 06-cli-install]: install-test CI job uses Python 3.11 only (one per OS); unit-test job already covers 3×3 matrix
 - [Phase 06-cli-install]: shell: bash on every install-test step for uniform Win/macOS/Linux semantics (Git Bash on Windows runner)
@@ -122,10 +122,10 @@ None yet.
 
 [Issues that affect future work]
 
-- **Phase 0 blocker — PyPI name conflict**: `cyrus` and 7+ variants are taken. Must pick from shortlist before any public commitment.
+- **Phase 0 blocker — PyPI name conflict**: `sekha` and 7+ variants are taken. Must pick from shortlist before any public commitment.
 - **Phase 0 blocker — Python 3.9 EOL**: PROJECT.md says 3.9+ but 3.9 is end-of-life. Bump minimum to 3.11.
-- **Phase 4 hard CI gate (deferred to Phase 4)**: `cyrus hook bench` must hit p50 < 50ms and p95 < 150ms on Windows, macOS, and Linux. If Windows cold-start blows the budget, the project pivots or dies.
-- **Phase 5 hard CI lint gate (deferred to Phase 5)**: `grep -r 'print(' src/cyrus/server.py src/cyrus/tools.py` must return zero results.
+- **Phase 4 hard CI gate (deferred to Phase 4)**: `sekha hook bench` must hit p50 < 50ms and p95 < 150ms on Windows, macOS, and Linux. If Windows cold-start blows the budget, the project pivots or dies.
+- **Phase 5 hard CI lint gate (deferred to Phase 5)**: `grep -r 'print(' src/sekha/server.py src/sekha/tools.py` must return zero results.
 - **Phase 6 hard release gate (deferred to Phase 6)**: Fresh-VM install test on Windows + macOS + Linux must succeed end-to-end with no manual fixups.
 
 ## Session Continuity

@@ -1,4 +1,4 @@
-"""`cyrus doctor` implementation: 7 diagnostic checks with ASCII and JSON modes.
+"""`sekha doctor` implementation: 7 diagnostic checks with ASCII and JSON modes.
 
 Each check returns a `CheckResult(name, ok, detail)`. `collect_checks()` runs
 all 7 in a fixed order and `run(argv)` renders them to stdout -- either as
@@ -7,10 +7,10 @@ is passed. Exit code is 0 iff every check passed.
 
 The 7 checks:
 1. python_version            Python >= 3.11
-2. cyrus_on_path             shutil.which('cyrus') returns a path
-3. cyrus_home_writable       ~/.cyrus/ is writable
-4. settings_hook_registered  ~/.claude/settings.json has cyrus hook run
-5. mcp_canary                `cyrus serve` responds to initialize
+2. sekha_on_path             shutil.which('sekha') returns a path
+3. sekha_home_writable       ~/.sekha/ is writable
+4. settings_hook_registered  ~/.claude/settings.json has sekha hook run
+5. mcp_canary                `sekha serve` responds to initialize
 6. kill_switch               not active
 7. recent_hook_errors        informational, never hard-fails
 
@@ -35,7 +35,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from cyrus.paths import cyrus_home
+from sekha.paths import sekha_home
 
 __all__ = (
     "CheckResult",
@@ -60,25 +60,25 @@ def _check_python_version() -> CheckResult:
     return CheckResult("python_version", ok, f"Python {v.major}.{v.minor}.{v.micro}")
 
 
-def _check_cyrus_on_path() -> CheckResult:
-    path = shutil.which("cyrus")
+def _check_sekha_on_path() -> CheckResult:
+    path = shutil.which("sekha")
     return CheckResult(
-        "cyrus_on_path",
+        "sekha_on_path",
         path is not None,
         path or "not found on PATH",
     )
 
 
-def _check_cyrus_home_writable() -> CheckResult:
-    home = cyrus_home()
+def _check_sekha_home_writable() -> CheckResult:
+    home = sekha_home()
     try:
         home.mkdir(parents=True, exist_ok=True)
         probe = home / ".doctor-probe"
         probe.write_text("probe", encoding="utf-8")
         probe.unlink()
-        return CheckResult("cyrus_home_writable", True, str(home))
+        return CheckResult("sekha_home_writable", True, str(home))
     except OSError as exc:
-        return CheckResult("cyrus_home_writable", False, f"{home}: {exc}")
+        return CheckResult("sekha_home_writable", False, f"{home}: {exc}")
 
 
 def _check_settings_hook_registered() -> CheckResult:
@@ -87,7 +87,7 @@ def _check_settings_hook_registered() -> CheckResult:
         return CheckResult(
             "settings_hook_registered",
             False,
-            f"{settings} missing; run `cyrus init`",
+            f"{settings} missing; run `sekha init`",
         )
     try:
         data = json.loads(settings.read_text(encoding="utf-8"))
@@ -107,21 +107,21 @@ def _check_settings_hook_registered() -> CheckResult:
             if not isinstance(entry, dict):
                 continue
             for h in entry.get("hooks") or []:
-                if isinstance(h, dict) and h.get("command") == "cyrus hook run":
+                if isinstance(h, dict) and h.get("command") == "sekha hook run":
                     found = True
                     break
             if found:
                 break
     detail = (
-        "cyrus hook run registered"
+        "sekha hook run registered"
         if found
-        else "not found; run `cyrus init`"
+        else "not found; run `sekha init`"
     )
     return CheckResult("settings_hook_registered", found, detail)
 
 
 def _mcp_canary(timeout: float = 5.0) -> tuple[bool, str]:
-    """Spawn `cyrus serve`, send initialize, read one response, return (ok, detail).
+    """Spawn `sekha serve`, send initialize, read one response, return (ok, detail).
 
     Returns (False, reason) on any exception -- the doctor never raises.
     """
@@ -137,7 +137,7 @@ def _mcp_canary(timeout: float = 5.0) -> tuple[bool, str]:
     }) + "\n"
     try:
         proc = subprocess.Popen(
-            [sys.executable, "-m", "cyrus.cli", "serve"],
+            [sys.executable, "-m", "sekha.cli", "serve"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -147,7 +147,7 @@ def _mcp_canary(timeout: float = 5.0) -> tuple[bool, str]:
             out, _ = proc.communicate(input=msg, timeout=timeout)
         except subprocess.TimeoutExpired:
             proc.kill()
-            return (False, f"cyrus serve did not respond within {timeout}s")
+            return (False, f"sekha serve did not respond within {timeout}s")
         for line in out.splitlines():
             if not line.strip():
                 continue
@@ -158,7 +158,7 @@ def _mcp_canary(timeout: float = 5.0) -> tuple[bool, str]:
             pv = (resp.get("result") or {}).get("protocolVersion", "")
             if pv:
                 return (True, f"protocolVersion={pv}")
-        return (False, "no initialize response from cyrus serve")
+        return (False, "no initialize response from sekha serve")
     except Exception as exc:  # noqa: BLE001 -- doctor must not raise
         return (False, f"canary failed: {exc}")
 
@@ -169,21 +169,21 @@ def _check_mcp_canary() -> CheckResult:
 
 
 def _check_kill_switch() -> CheckResult:
-    # Lazy import: cyrus._hookutil pulls in cyrus.paths -- cheap but keeps
-    # the top-level module strictly to stdlib + cyrus.paths.
-    from cyrus._hookutil import check_kill_switch
+    # Lazy import: sekha._hookutil pulls in sekha.paths -- cheap but keeps
+    # the top-level module strictly to stdlib + sekha.paths.
+    from sekha._hookutil import check_kill_switch
     tripped = check_kill_switch()
     if tripped:
         return CheckResult(
             "kill_switch",
             False,
-            "kill switch ACTIVE; run `cyrus hook enable`",
+            "kill switch ACTIVE; run `sekha hook enable`",
         )
     return CheckResult("kill_switch", True, "not active")
 
 
 def _check_recent_hook_errors() -> CheckResult:
-    log = cyrus_home() / "hook-errors.log"
+    log = sekha_home() / "hook-errors.log"
     if not log.exists():
         return CheckResult("recent_hook_errors", True, "no errors logged")
     try:
@@ -231,8 +231,8 @@ def collect_checks() -> list[CheckResult]:
     """Run all 7 checks and return them in canonical order."""
     return [
         _check_python_version(),
-        _check_cyrus_on_path(),
-        _check_cyrus_home_writable(),
+        _check_sekha_on_path(),
+        _check_sekha_home_writable(),
         _check_settings_hook_registered(),
         _check_mcp_canary(),
         _check_kill_switch(),
@@ -242,8 +242,8 @@ def collect_checks() -> list[CheckResult]:
 
 def run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="cyrus doctor",
-        description="Run 7 diagnostic checks for a Cyrus install",
+        prog="sekha doctor",
+        description="Run 7 diagnostic checks for a Sekha install",
     )
     parser.add_argument(
         "--json",
@@ -273,7 +273,7 @@ def run(argv: list[str] | None = None) -> int:
         sys.stdout.write(f"{tag} {c.name}: {c.detail}\n")
     sys.stdout.write("\n")
     if all_ok:
-        sys.stdout.write("All checks passed. Cyrus is ready to use.\n")
+        sys.stdout.write("All checks passed. Sekha is ready to use.\n")
     else:
         sys.stdout.write("One or more checks failed. See above.\n")
     try:

@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Build the long-lived MCP server `cyrus.server` over newline-delimited JSON-RPC 2.0. Exposes exactly 6 `cyrus_*`-prefixed tools: `save`, `search`, `list`, `delete`, `status`, `add_rule`. Implements `initialize`, `notifications/initialized`, `tools/list`, `tools/call`, `ping`, `notifications/cancelled`.
+Build the long-lived MCP server `sekha.server` over newline-delimited JSON-RPC 2.0. Exposes exactly 6 `sekha_*`-prefixed tools: `save`, `search`, `list`, `delete`, `status`, `add_rule`. Implements `initialize`, `notifications/initialized`, `tools/list`, `tools/call`, `ping`, `notifications/cancelled`.
 
 With the hook already proven in Phase 4, this phase focuses on stdio framing correctness, Windows hardening, and the JSON-RPC handshake — the boring-but-deadly details that killed MemPalace.
 
@@ -20,14 +20,14 @@ With the hook already proven in Phase 4, this phase focuses on stdio framing cor
 
 - **Transport:** Newline-delimited JSON-RPC 2.0 over stdio. NOT Content-Length framed. Confirmed from MemPalace debugging: Claude Code uses line-delimited, not LSP-style framing.
 - **Protocol versions accepted:** `{"2025-11-25", "2025-03-26", "2024-11-05"}` — echo back whatever client sends in initialize response
-- **Server info:** `{"name": "cyrus", "version": "<package version>"}`
+- **Server info:** `{"name": "sekha", "version": "<package version>"}`
 - **Capabilities:** `{"tools": {}}`
 
-### The 6 Tools (all prefixed `cyrus_`)
+### The 6 Tools (all prefixed `sekha_`)
 
 ```python
 TOOLS = {
-    "cyrus_save": {
+    "sekha_save": {
         "description": "Save a memory. category must be one of: sessions, decisions, preferences, projects, rules.",
         "inputSchema": {
             "type": "object",
@@ -40,7 +40,7 @@ TOOLS = {
             "required": ["category", "content"]
         }
     },
-    "cyrus_search": {
+    "sekha_search": {
         "description": "Full-text search over saved memories, ranked by term frequency × recency × filename match.",
         "inputSchema": {
             "type": "object",
@@ -53,7 +53,7 @@ TOOLS = {
             "required": ["query"]
         }
     },
-    "cyrus_list": {
+    "sekha_list": {
         "description": "List memories in a category with metadata only (no body content).",
         "inputSchema": {
             "type": "object",
@@ -64,7 +64,7 @@ TOOLS = {
             }
         }
     },
-    "cyrus_delete": {
+    "sekha_delete": {
         "description": "Delete a memory by path. Returns success/failure.",
         "inputSchema": {
             "type": "object",
@@ -72,11 +72,11 @@ TOOLS = {
             "required": ["path"]
         }
     },
-    "cyrus_status": {
+    "sekha_status": {
         "description": "Return total memory count, category breakdown, rules count, recent activity, hook error count.",
         "inputSchema": {"type": "object", "properties": {}}
     },
-    "cyrus_add_rule": {
+    "sekha_add_rule": {
         "description": "Create a new rule file. Validates regex compiles before writing.",
         "inputSchema": {
             "type": "object",
@@ -97,14 +97,14 @@ TOOLS = {
 
 ### Tool Handlers
 
-Each tool is a pure function in `cyrus.tools`:
+Each tool is a pure function in `sekha.tools`:
 
 ```python
-def cyrus_save(category: str, content: str, tags: list[str] = None, source: str = None) -> dict:
-    """Delegates to cyrus.storage.save_memory. Returns {"path": str, "id": str}."""
+def sekha_save(category: str, content: str, tags: list[str] = None, source: str = None) -> dict:
+    """Delegates to sekha.storage.save_memory. Returns {"path": str, "id": str}."""
 
-def cyrus_search(query: str, category: str = None, limit: int = 10, tags: list[str] = None) -> dict:
-    """Delegates to cyrus.search.search. Returns {"results": [{"path": ..., "score": ..., "snippet": ..., "metadata": ...}]}."""
+def sekha_search(query: str, category: str = None, limit: int = 10, tags: list[str] = None) -> dict:
+    """Delegates to sekha.search.search. Returns {"results": [{"path": ..., "score": ..., "snippet": ..., "metadata": ...}]}."""
 
 # ... etc
 ```
@@ -171,14 +171,14 @@ Tool handlers write to `sys.stdout_real` (the protected handle); any `print()` e
 ### Hard CI Lint Gate
 
 ```bash
-grep -rE "^\s*print\(" src/cyrus/server.py src/cyrus/tools.py src/cyrus/jsonrpc.py src/cyrus/schemas.py
+grep -rE "^\s*print\(" src/sekha/server.py src/sekha/tools.py src/sekha/jsonrpc.py src/sekha/schemas.py
 ```
 MUST return zero results. Any stray print corrupts the protocol.
 
 ### Module Layout
 
 ```
-src/cyrus/
+src/sekha/
     server.py       # main() + server loop
     tools.py        # 6 tool handler functions
     jsonrpc.py      # parse/emit helpers, error codes, stdio harden
@@ -192,7 +192,7 @@ tests/
 ### Testing Strategy
 
 - Unit test each tool handler in isolation
-- Integration test: scripted JSON-RPC sequence piped into subprocess running `cyrus serve` (NOT bench — actual server spin-up)
+- Integration test: scripted JSON-RPC sequence piped into subprocess running `sekha serve` (NOT bench — actual server spin-up)
 - Test protocol version negotiation (all 3 versions)
 - Test error responses (parse error, unknown tool, invalid params)
 - Test stdio hardening: deliberately `print("OOPS")` from inside a tool handler, assert protocol stream untouched
@@ -200,14 +200,14 @@ tests/
 
 ### CLI Entry Point
 
-Add to `cyrus.cli` in Phase 5:
+Add to `sekha.cli` in Phase 5:
 ```python
 # alongside `hook run` and `hook bench`
 sub.add_parser("serve", help="Run MCP server (invoked by Claude Code)")
-# router: if args.command == "serve": from cyrus.server import main; return main()
+# router: if args.command == "serve": from sekha.server import main; return main()
 ```
 
-Claude Code invokes as: `cyrus serve` (added to `.claude.json` via `claude mcp add cyrus -- cyrus serve`).
+Claude Code invokes as: `sekha serve` (added to `.claude.json` via `claude mcp add sekha -- sekha serve`).
 
 ### Claude's Discretion
 
@@ -221,12 +221,12 @@ Claude Code invokes as: `cyrus serve` (added to `.claude.json` via `claude mcp a
 ## Existing Code Insights
 
 ### Reusable Assets
-- `cyrus.storage.save_memory`, `cyrus.storage.parse_frontmatter`, `cyrus.storage.CATEGORIES` — for save/list/delete
-- `cyrus.search.search` — for cyrus_search tool
-- `cyrus.rules.load_rules`, `cyrus.rules.evaluate` — not directly used by tools but indirectly via cyrus_add_rule
-- `cyrus.paths.cyrus_home()` — home dir
-- `cyrus.logutil.get_logger()` — stderr logging
-- `cyrus.cli` — existing argparse router, add `serve` subcommand
+- `sekha.storage.save_memory`, `sekha.storage.parse_frontmatter`, `sekha.storage.CATEGORIES` — for save/list/delete
+- `sekha.search.search` — for sekha_search tool
+- `sekha.rules.load_rules`, `sekha.rules.evaluate` — not directly used by tools but indirectly via sekha_add_rule
+- `sekha.paths.sekha_home()` — home dir
+- `sekha.logutil.get_logger()` — stderr logging
+- `sekha.cli` — existing argparse router, add `serve` subcommand
 
 ### Established Patterns
 - Stdlib only
@@ -236,17 +236,17 @@ Claude Code invokes as: `cyrus serve` (added to `.claude.json` via `claude mcp a
 - Lazy imports where protocol integrity matters
 
 ### Integration Points
-- Phase 6 `cyrus init` registers the server via `claude mcp add cyrus -- cyrus serve`
+- Phase 6 `sekha init` registers the server via `claude mcp add sekha -- sekha serve`
 - Hook (Phase 4) runs in a separate process — no shared state with server
-- Both hook and server read from `~/.cyrus/` — filesystem is the message bus
+- Both hook and server read from `~/.sekha/` — filesystem is the message bus
 
 </code_context>
 
 <specifics>
 ## Specific Ideas
 
-- Integration tests for the server MUST spawn the actual `cyrus serve` subprocess. Protocol bugs only surface when stdout buffering is real.
-- Test `initialize` → `tools/list` → `tools/call cyrus_status` → graceful shutdown as the canonical happy path
+- Integration tests for the server MUST spawn the actual `sekha serve` subprocess. Protocol bugs only surface when stdout buffering is real.
+- Test `initialize` → `tools/list` → `tools/call sekha_status` → graceful shutdown as the canonical happy path
 - Test `initialize` with unknown protocol version — should echo back something reasonable
 - Test a tool call that throws — should return error in response, not crash server
 - Write one test that pipes a `print("pollution")` in via stdin and proves the server survives

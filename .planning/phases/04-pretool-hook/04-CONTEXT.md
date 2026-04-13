@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Build `cyrus.hook` — a short-lived Python process invoked by Claude Code's PreToolUse hook. Reads JSON from stdin, evaluates rules, emits `permissionDecision: deny` JSON to stdout when a block-severity rule matches. Ships before the MCP server so the core value proposition is validated on real Claude Code before anything else.
+Build `sekha.hook` — a short-lived Python process invoked by Claude Code's PreToolUse hook. Reads JSON from stdin, evaluates rules, emits `permissionDecision: deny` JSON to stdout when a block-severity rule matches. Ships before the MCP server so the core value proposition is validated on real Claude Code before anything else.
 
 If the hook doesn't actually block tool calls on a real Claude Code install, the project has no moat. This phase exists to find that out on day 7, not day 30.
 
@@ -16,9 +16,9 @@ If the hook doesn't actually block tool calls on a real Claude Code install, the
 <decisions>
 ## Implementation Decisions
 
-### Module: `cyrus.hook`
+### Module: `sekha.hook`
 
-Entry point registered as `cyrus hook run` via `[project.scripts]` in pyproject.toml (add alongside existing `cyrus` entry point — or repurpose existing as umbrella CLI with `hook run` subcommand).
+Entry point registered as `sekha hook run` via `[project.scripts]` in pyproject.toml (add alongside existing `sekha` entry point — or repurpose existing as umbrella CLI with `hook run` subcommand).
 
 ```python
 def main() -> int:
@@ -28,11 +28,11 @@ def main() -> int:
 
 ### CLI Routing
 
-Since `[project.scripts] cyrus = "cyrus.cli:main"` already exists, we need a `cyrus.cli` module with argparse routing. For now, implement a minimal CLI in `src/cyrus/cli.py`:
+Since `[project.scripts] sekha = "sekha.cli:main"` already exists, we need a `sekha.cli` module with argparse routing. For now, implement a minimal CLI in `src/sekha/cli.py`:
 
 ```python
 def main():
-    parser = argparse.ArgumentParser(prog="cyrus")
+    parser = argparse.ArgumentParser(prog="sekha")
     sub = parser.add_subparsers(dest="command", required=True)
     hook = sub.add_parser("hook", help="Hook operations")
     hook_sub = hook.add_subparsers(dest="hook_command", required=True)
@@ -41,14 +41,14 @@ def main():
     
     args = parser.parse_args()
     if args.command == "hook" and args.hook_command == "run":
-        from cyrus.hook import main as hook_main
+        from sekha.hook import main as hook_main
         return hook_main()
     if args.command == "hook" and args.hook_command == "bench":
-        from cyrus.hook import bench as hook_bench
+        from sekha.hook import bench as hook_bench
         return hook_bench()
 ```
 
-This also positions `cyrus init`, `cyrus doctor`, `cyrus add-rule`, `cyrus list-rules` for Phase 6.
+This also positions `sekha init`, `sekha doctor`, `sekha add-rule`, `sekha list-rules` for Phase 6.
 
 ### PreToolUse Schema (input)
 
@@ -99,8 +99,8 @@ No allow output — absence of decision allows by default.
 
 - **p50 < 50ms, p95 < 150ms** on Win/macOS/Linux
 - Python cold-start on Windows is 100-250ms baseline — the tightest platform
-- `cyrus hook bench` runs 100 invocations with realistic rules, reports p50/p95/p99
-- CI gate: bench run must stay within budget; build fails otherwise (but same platform-aware approach as search bench — Windows budget can be relaxed with `CYRUS_HOOK_P95_MS` override)
+- `sekha hook bench` runs 100 invocations with realistic rules, reports p50/p95/p99
+- CI gate: bench run must stay within budget; build fails otherwise (but same platform-aware approach as search bench — Windows budget can be relaxed with `SEKHA_HOOK_P95_MS` override)
 
 ### Lazy Imports
 
@@ -108,19 +108,19 @@ Top of `hook.py` imports only `sys, json`. Every other import inside `main()` fu
 ```python
 def main():
     try:
-        from cyrus.rules import load_rules, evaluate
-        from cyrus.paths import cyrus_home
-        from cyrus.logutil import get_logger
+        from sekha.rules import load_rules, evaluate
+        from sekha.paths import sekha_home
+        from sekha.logutil import get_logger
         # ... rest
     except Exception as e:
         _fail_open(e)
 ```
 
-`python -X importtime cyrus.hook` should show total import <30ms.
+`python -X importtime sekha.hook` should show total import <30ms.
 
 ### Compiled Rules Cache
 
-Handled by `cyrus.rules` module already — mtime-based cache in-process. Since the hook is a short-lived process (one invocation per tool call), in-process cache doesn't persist. Options:
+Handled by `sekha.rules` module already — mtime-based cache in-process. Since the hook is a short-lived process (one invocation per tool call), in-process cache doesn't persist. Options:
 1. Accept the per-invocation parse cost (~5ms for 50 rules)
 2. Persist compiled rules as pickle file keyed on rules-dir mtime (optimization if needed)
 
@@ -138,25 +138,25 @@ def main():
         return 0  # allow tool call
 
 def _fail_open(exc):
-    # Log to ~/.cyrus/hook-errors.log with full traceback
-    log_path = Path.home() / ".cyrus" / "hook-errors.log"
+    # Log to ~/.sekha/hook-errors.log with full traceback
+    log_path = Path.home() / ".sekha" / "hook-errors.log"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8") as f:
         f.write(f"{datetime.now().isoformat()} {type(exc).__name__}: {exc}\n")
         f.write(traceback.format_exc())
         f.write("\n")
     # Write warning to stderr (visible to Claude Code operator)
-    print(f"cyrus hook error: {exc}", file=sys.stderr)
+    print(f"sekha hook error: {exc}", file=sys.stderr)
     # No block output → tool proceeds (fail open)
 ```
 
 ### Kill Switch
 
-After 3 consecutive errors within the last N minutes, write `~/.cyrus/hook-disabled.marker`. `cyrus doctor` (Phase 6) surfaces this; user runs `cyrus hook enable` to clear.
+After 3 consecutive errors within the last N minutes, write `~/.sekha/hook-disabled.marker`. `sekha doctor` (Phase 6) surfaces this; user runs `sekha hook enable` to clear.
 
 ```python
 def _check_kill_switch():
-    marker = cyrus_home() / "hook-disabled.marker"
+    marker = sekha_home() / "hook-disabled.marker"
     if marker.exists():
         # Log once per hour to avoid spam
         return True
@@ -166,9 +166,9 @@ def _check_kill_switch():
 ### End-to-End Integration Test
 
 A real Claude Code session with:
-1. Install cyrus: `pip install -e .`
-2. Create rule: `~/.cyrus/rules/block-bash-test.md` — blocks all Bash calls
-3. Register hook in `.claude/settings.json` using `cyrus hook run`
+1. Install sekha: `pip install -e .`
+2. Create rule: `~/.sekha/rules/block-bash-test.md` — blocks all Bash calls
+3. Register hook in `.claude/settings.json` using `sekha hook run`
 4. Start Claude Code, ask it to run a Bash command
 5. Assert: command was blocked, message visible to user
 
@@ -177,7 +177,7 @@ This test is **manual** in Phase 4. Automated version via headless Claude Code h
 ### Module Layout
 
 ```
-src/cyrus/
+src/sekha/
     cli.py             # NEW — argparse router
     hook.py            # NEW — PreToolUse hook entry + bench
     _hookutil.py       # NEW — private: JSON I/O, kill-switch, fail-open helpers
@@ -190,10 +190,10 @@ tests/
 
 ### Claude's Discretion
 
-- Whether `cyrus hook bench` uses subprocess or in-process timing (suggest subprocess — measures real cold start)
+- Whether `sekha hook bench` uses subprocess or in-process timing (suggest subprocess — measures real cold start)
 - Bench result format (suggest: `p50=42ms p95=118ms p99=143ms runs=100`)
 - Kill-switch error-rate window (suggest: last 5 errors within 10 minutes)
-- Whether to ship a `cyrus hook enable/disable` command in this phase (suggest: yes, small addition, avoids Phase 6 retrofit)
+- Whether to ship a `sekha hook enable/disable` command in this phase (suggest: yes, small addition, avoids Phase 6 retrofit)
 
 </decisions>
 
@@ -201,10 +201,10 @@ tests/
 ## Existing Code Insights
 
 ### Reusable Assets
-- `cyrus.rules.load_rules`, `cyrus.rules.evaluate` — rules matching
-- `cyrus.paths.cyrus_home()` — home dir
-- `cyrus.logutil.get_logger()` — stderr logging
-- `cyrus.storage` — atomic write for hook-errors.log (optional)
+- `sekha.rules.load_rules`, `sekha.rules.evaluate` — rules matching
+- `sekha.paths.sekha_home()` — home dir
+- `sekha.logutil.get_logger()` — stderr logging
+- `sekha.storage` — atomic write for hook-errors.log (optional)
 
 ### Established Patterns
 - Stdlib only
@@ -213,9 +213,9 @@ tests/
 - stderr-only logging (EXCEPT for hook's protocol output on stdout)
 
 ### Integration Points
-- Claude Code's `.claude/settings.json` hook config calls `cyrus hook run`
+- Claude Code's `.claude/settings.json` hook config calls `sekha hook run`
 - Phase 5 MCP server is separate process; no shared state
-- Phase 6 `cyrus init` will register hook in `.claude/settings.json` automatically
+- Phase 6 `sekha init` will register hook in `.claude/settings.json` automatically
 
 </code_context>
 
@@ -224,8 +224,8 @@ tests/
 
 - **Stdout is sacred** — only the hook decision JSON goes there, nothing else. Any stray `print(` breaks the protocol.
 - Swap `sys.stdout` with `sys.stderr` at the top of `main()` before any rules module imports (which might log). Restore for final JSON emit.
-- Bench script runs `cyrus hook run` as a subprocess 100 times with the same fixture input — measures real cold-start including Python interpreter launch.
-- On Windows, `subprocess.run` with `.exe` entry point vs `python -m cyrus.cli` can differ by 20-30ms. Bench both paths, document difference.
+- Bench script runs `sekha hook run` as a subprocess 100 times with the same fixture input — measures real cold-start including Python interpreter launch.
+- On Windows, `subprocess.run` with `.exe` entry point vs `python -m sekha.cli` can differ by 20-30ms. Bench both paths, document difference.
 
 </specifics>
 

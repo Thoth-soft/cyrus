@@ -1,32 +1,32 @@
 ---
 phase: 02-search-engine
 plan: 01
-subsystem: cyrus.search
+subsystem: sekha.search
 tags: [search, scoring, redos, snippet, stdlib]
 requirements_completed: [SEARCH-01, SEARCH-02, SEARCH-03, SEARCH-04, SEARCH-06]
 dependency_graph:
   requires:
-    - cyrus.paths (cyrus_home, CATEGORIES, category_dir)
-    - cyrus.storage.parse_frontmatter
-    - cyrus.logutil.get_logger
+    - sekha.paths (sekha_home, CATEGORIES, category_dir)
+    - sekha.storage.parse_frontmatter
+    - sekha.logutil.get_logger
   provides:
-    - cyrus.search.search
-    - cyrus.search.SearchResult
-    - cyrus._searchutil.{is_literal_query, recency_decay, filename_bonus, extract_snippet, scan_file_with_timeout}
+    - sekha.search.search
+    - sekha.search.SearchResult
+    - sekha._searchutil.{is_literal_query, recency_decay, filename_bonus, extract_snippet, scan_file_with_timeout}
   affects:
-    - Phase 5 MCP server (cyrus_search tool will import cyrus.search.search)
+    - Phase 5 MCP server (sekha_search tool will import sekha.search.search)
     - Plan 02-02 (10k-file benchmark imports this module unchanged)
 tech-stack:
   added: []
   patterns:
     - Stdlib-only (re, math, threading, heapq, os.walk, pathlib, dataclasses, datetime)
-    - Stderr-only logging via cyrus.logutil.get_logger
-    - unittest.TestCase with tempfile.mkdtemp + CYRUS_HOME env isolation
+    - Stderr-only logging via sekha.logutil.get_logger
+    - unittest.TestCase with tempfile.mkdtemp + SEKHA_HOME env isolation
     - Public/private module split (search.py vs _searchutil.py)
 key-files:
   created:
-    - src/cyrus/search.py
-    - src/cyrus/_searchutil.py
+    - src/sekha/search.py
+    - src/sekha/_searchutil.py
     - tests/test_search.py
     - tests/test_searchutil.py
   modified: []
@@ -46,14 +46,14 @@ metrics:
   completed: "2026-04-12T23:02:26Z"
 ---
 
-# Phase 2 Plan 01: cyrus.search Core Summary
+# Phase 2 Plan 01: sekha.search Core Summary
 
-Delivered the public `cyrus.search.search()` API and its private scoring/ReDoS-guard helpers in `cyrus._searchutil`. Full TDD: RED commits preceded every implementation, and the ReDoS guard pre-rejects catastrophic regex shapes structurally because CPython's `re` holds the GIL and cannot be preempted by a thread watchdog.
+Delivered the public `sekha.search.search()` API and its private scoring/ReDoS-guard helpers in `sekha._searchutil`. Full TDD: RED commits preceded every implementation, and the ReDoS guard pre-rejects catastrophic regex shapes structurally because CPython's `re` holds the GIL and cannot be preempted by a thread watchdog.
 
 ## Public API
 
 ```python
-# src/cyrus/search.py
+# src/sekha/search.py
 
 @dataclass
 class SearchResult:
@@ -94,7 +94,7 @@ The structural pre-check is necessary because CPython's `re` is a C extension th
 
 ## Filters
 
-- `category="rules"` restricts `os.walk` to `cyrus_home() / rules/`.
+- `category="rules"` restricts `os.walk` to `sekha_home() / rules/`.
 - `since=datetime(2026,1,1,tz=UTC)` skips files where `metadata["updated"] < since.isoformat(timespec="seconds")`.
 - `tags=["auth","jwt"]` uses AND logic — all tags must be present in `metadata["tags"]`.
 
@@ -130,14 +130,14 @@ python -m unittest tests.test_search -v
 python -m unittest discover -s tests -v
 
 # Import smoke test
-python -c "from cyrus.search import search, SearchResult; print('OK')"
+python -c "from sekha.search import search, SearchResult; print('OK')"
 ```
 
 58 new tests added; 120 tests total, all green on Windows + Python 3.14 locally.
 
 ## Requirements Verified
 
-- **SEARCH-01** — `re.compile` + `os.walk`, zero external deps. Enforced by imports in `src/cyrus/search.py` and `src/cyrus/_searchutil.py`.
+- **SEARCH-01** — `re.compile` + `os.walk`, zero external deps. Enforced by imports in `src/sekha/search.py` and `src/sekha/_searchutil.py`.
 - **SEARCH-02** — `tf * recency_decay * filename_bonus` implemented and locked by `TestSearchScoring` (3 tests).
 - **SEARCH-03** — `SearchResult.snippet` = matched line plus or minus 1 context line, 120-char truncation. Covered by `TestExtractSnippet` (8 tests) and `TestSearchSnippetExtraction` (2 tests).
 - **SEARCH-04** — catastrophic `(a+)+b` against adversarial body completes in <10ms (was 115s pre-fix). Covered by `TestScanFileWithTimeout.test_catastrophic_pattern_times_out` and `TestSearchReDoS.test_catastrophic_pattern_does_not_hang`.
@@ -150,8 +150,8 @@ python -c "from cyrus.search import search, SearchResult; print('OK')"
 | ---- | ---- | -------- | -------------------------------------------------------------- |
 | 1    | RED  | 5d0c8dc  | test(02-01): add failing tests for _searchutil helpers         |
 | 2    | GREEN| bf1d850  | feat(02-01): implement _searchutil helpers with ReDoS guard    |
-| 3    | RED  | 220a789  | test(02-01): add failing tests for cyrus.search public API     |
-| 4    | GREEN| 07823f5  | feat(02-01): implement cyrus.search public API                 |
+| 3    | RED  | 220a789  | test(02-01): add failing tests for sekha.search public API     |
+| 4    | GREEN| 07823f5  | feat(02-01): implement sekha.search public API                 |
 
 ## Deviations from Plan
 
@@ -161,7 +161,7 @@ python -c "from cyrus.search import search, SearchResult; print('OK')"
 - **Found during:** Task 2 (Implement _searchutil)
 - **Issue:** The plan's spec (and `scan_file_with_timeout` sketch) relied on `threading.Thread` + `t.join(timeout)` to kill a catastrophic regex. But CPython's `re` module is a C extension that holds the GIL for the entire `findall()` call. The main thread's `join(0.1)` never returns within 0.1s — it waits for the GIL the worker never releases. Running the test against `(a+)+b` on 30 `a`'s hung for 115 seconds.
 - **Fix:** Added `_is_catastrophic_pattern()` structural pre-check that rejects the classic ReDoS shapes (`(X+)+`, `(X*)*`, `(X+)*`, `(X*)+`, `{n,}`/`{n,m}` variants, `(X|Y)*` alternation) BEFORE `re.compile` + `findall`. This matches CONTEXT.md's explicit guidance: *"Pre-validate: reject patterns containing nested quantifiers that look catastrophic"*. Kept the thread watchdog as secondary defense for regexes the static check misses.
-- **Files modified:** src/cyrus/_searchutil.py
+- **Files modified:** src/sekha/_searchutil.py
 - **Commit:** bf1d850
 - **Result:** Catastrophic test completes in <10ms (was 115s); all 120 tests green.
 
@@ -172,14 +172,14 @@ None.
 ## Known Stubs
 
 None. Every file is fully wired:
-- `search()` uses real `os.walk` over `cyrus_home()` and returns real `SearchResult` instances with parsed frontmatter.
+- `search()` uses real `os.walk` over `sekha_home()` and returns real `SearchResult` instances with parsed frontmatter.
 - `extract_snippet` returns real body-derived snippets, not placeholders.
 - `scan_file_with_timeout` reads real files via `path.read_text`.
 
 ## Self-Check: PASSED
 
-- src/cyrus/search.py: FOUND
-- src/cyrus/_searchutil.py: FOUND
+- src/sekha/search.py: FOUND
+- src/sekha/_searchutil.py: FOUND
 - tests/test_search.py: FOUND
 - tests/test_searchutil.py: FOUND
 - Commit 5d0c8dc: FOUND
@@ -187,4 +187,4 @@ None. Every file is fully wired:
 - Commit 220a789: FOUND
 - Commit 07823f5: FOUND
 - `python -m unittest discover -s tests` exits 0 with 120/120 tests passing
-- `python -c "from cyrus.search import search, SearchResult; print('OK')"` prints OK
+- `python -c "from sekha.search import search, SearchResult; print('OK')"` prints OK

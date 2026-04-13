@@ -14,7 +14,7 @@ variants before they rewrite shared history.
 
 Known escape: a cleverer AI could `git checkout main && git push --force`
 without naming the branch on the push line. This rule only catches the
-explicit main/master mention -- consistent with Cyrus's "consistency enforcer,
+explicit main/master mention -- consistent with Sekha's "consistency enforcer,
 not a security sandbox" posture. If you want to also block bare
 `git push --force`, add a second rule with pattern 'git\s+push.*--force' and
 a lower priority so the branch-aware rule still fires first when it applies.

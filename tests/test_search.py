@@ -1,7 +1,7 @@
-"""Integration tests for cyrus.search public API.
+"""Integration tests for sekha.search public API.
 
 Task 3 of Plan 02-01 — RED stage. These tests MUST fail initially because
-cyrus.search does not exist yet. Task 4 implements the module.
+sekha.search does not exist yet. Task 4 implements the module.
 
 Coverage:
 - TestSearchBasics: empty query, result shape, ranking, limits, metadata
@@ -19,23 +19,23 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from cyrus.search import SearchResult, search
-from cyrus.storage import atomic_write, dump_frontmatter, save_memory
+from sekha.search import SearchResult, search
+from sekha.storage import atomic_write, dump_frontmatter, save_memory
 
 
-class _CyrusHomeIsolation(unittest.TestCase):
-    """Mixin that isolates CYRUS_HOME to a fresh tempdir per test."""
+class _SekhaHomeIsolation(unittest.TestCase):
+    """Mixin that isolates SEKHA_HOME to a fresh tempdir per test."""
 
     def setUp(self):
-        self._tmp = tempfile.mkdtemp(prefix="cyrus-search-")
-        self._saved = os.environ.get("CYRUS_HOME")
-        os.environ["CYRUS_HOME"] = self._tmp
+        self._tmp = tempfile.mkdtemp(prefix="sekha-search-")
+        self._saved = os.environ.get("SEKHA_HOME")
+        os.environ["SEKHA_HOME"] = self._tmp
 
     def tearDown(self):
         if self._saved is None:
-            os.environ.pop("CYRUS_HOME", None)
+            os.environ.pop("SEKHA_HOME", None)
         else:
-            os.environ["CYRUS_HOME"] = self._saved
+            os.environ["SEKHA_HOME"] = self._saved
         shutil.rmtree(self._tmp, ignore_errors=True)
 
     def _write_raw(
@@ -53,7 +53,7 @@ class _CyrusHomeIsolation(unittest.TestCase):
         return p
 
 
-class TestSearchBasics(_CyrusHomeIsolation):
+class TestSearchBasics(_SekhaHomeIsolation):
     def setUp(self):
         super().setUp()
         # Seed a handful of files so ranking has something to chew on.
@@ -114,15 +114,15 @@ class TestSearchBasics(_CyrusHomeIsolation):
             self.assertTrue(r.path.exists(), f"{r.path} does not exist")
 
 
-class TestSearchFilters(_CyrusHomeIsolation):
+class TestSearchFilters(_SekhaHomeIsolation):
     def setUp(self):
         super().setUp()
-        save_memory("sessions", "cyrus memory session", title="Sess a")
-        save_memory("decisions", "cyrus auth decision", title="Dec a")
-        save_memory("rules", "cyrus rule here", title="Rule a")
+        save_memory("sessions", "sekha memory session", title="Sess a")
+        save_memory("decisions", "sekha auth decision", title="Dec a")
+        save_memory("rules", "sekha rule here", title="Rule a")
 
     def test_category_filter_restricts_scan(self):
-        results = search("cyrus", category="rules")
+        results = search("sekha", category="rules")
         self.assertGreater(len(results), 0)
         rules_root = (Path(self._tmp) / "rules").resolve()
         for r in results:
@@ -133,10 +133,10 @@ class TestSearchFilters(_CyrusHomeIsolation):
 
     def test_category_invalid_raises(self):
         with self.assertRaises(ValueError):
-            search("cyrus", category="bogus")
+            search("sekha", category="bogus")
 
     def test_category_none_searches_all(self):
-        results = search("cyrus")
+        results = search("sekha")
         categories = {r.metadata.get("category") for r in results}
         self.assertGreaterEqual(len(categories), 2)
 
@@ -159,13 +159,13 @@ class TestSearchFilters(_CyrusHomeIsolation):
             "tags": [],
         }
         self._write_raw(
-            "sessions", "2024-01-01_old00000_old.md", old_meta, "cyrus old note"
+            "sessions", "2024-01-01_old00000_old.md", old_meta, "sekha old note"
         )
         self._write_raw(
-            "sessions", "2026-04-11_new00000_new.md", new_meta, "cyrus new note"
+            "sessions", "2026-04-11_new00000_new.md", new_meta, "sekha new note"
         )
         cutoff = datetime(2026, 1, 1, tzinfo=timezone.utc)
-        results = search("cyrus", since=cutoff)
+        results = search("sekha", since=cutoff)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].metadata["id"], "new00000")
 
@@ -202,11 +202,11 @@ class TestSearchFilters(_CyrusHomeIsolation):
         self.assertEqual(results[0].metadata["id"], "aaaa0001")
 
     def test_tags_no_match_returns_empty(self):
-        results = search("cyrus", tags=["nonexistent-tag-xyz"])
+        results = search("sekha", tags=["nonexistent-tag-xyz"])
         self.assertEqual(results, [])
 
 
-class TestSearchScoring(_CyrusHomeIsolation):
+class TestSearchScoring(_SekhaHomeIsolation):
     def test_filename_bonus_ranks_higher(self):
         # Two files with the same body; only one has 'jwt' in filename
         base = {
@@ -290,7 +290,7 @@ class TestSearchScoring(_CyrusHomeIsolation):
         self.assertEqual(results[0].metadata["id"], "aaaa0001")
 
 
-class TestSearchReDoS(_CyrusHomeIsolation):
+class TestSearchReDoS(_SekhaHomeIsolation):
     def test_catastrophic_pattern_does_not_hang(self):
         # 30 a's + X is the classic catastrophic fixture for (a+)+b
         save_memory("sessions", ("a" * 30) + "X", title="Evil")
@@ -315,7 +315,7 @@ class TestSearchReDoS(_CyrusHomeIsolation):
         self.assertIsInstance(results, list)
 
 
-class TestSearchSnippetExtraction(_CyrusHomeIsolation):
+class TestSearchSnippetExtraction(_SekhaHomeIsolation):
     def test_snippet_has_context(self):
         body = "line1\nMATCHTARGET in the middle\nline3"
         self._write_raw(

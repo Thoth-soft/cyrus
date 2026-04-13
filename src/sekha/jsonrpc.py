@@ -1,9 +1,9 @@
-"""JSON-RPC 2.0 helpers + stdio hardening for the Cyrus MCP server.
+"""JSON-RPC 2.0 helpers + stdio hardening for the Sekha MCP server.
 
-Stdlib only. Imported by cyrus.server (main loop) and cyrus.tools (error
+Stdlib only. Imported by sekha.server (main loop) and sekha.tools (error
 shaping). Kept deliberately small so the CI lint gate
 
-    grep -rE "^\\s*print\\(" src/cyrus/jsonrpc.py
+    grep -rE "^\\s*print\\(" src/sekha/jsonrpc.py
 
 trivially stays at zero hits forever. Every stray print anywhere in this
 module (or any module it imports) corrupts the MCP protocol channel —

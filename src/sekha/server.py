@@ -1,15 +1,15 @@
-"""Cyrus MCP stdio server. Long-lived process invoked as `cyrus serve`.
+"""Sekha MCP stdio server. Long-lived process invoked as `sekha serve`.
 
 Transport: newline-delimited JSON-RPC 2.0. NO Content-Length framing
 (Pitfall #1 — the framing choice that killed MemPalace with Claude Code).
 
-Stdout is sacred. main() calls cyrus.jsonrpc.harden_stdio() FIRST — before
+Stdout is sacred. main() calls sekha.jsonrpc.harden_stdio() FIRST — before
 any non-stdlib import in this module that could transitively print — so
 any stray print() lands on stderr harmlessly. All protocol writes go
 through the protected real-stdout handle returned by harden_stdio().
 
-Lazy-import policy: heavyweight modules (cyrus.tools, cyrus.schemas,
-cyrus.search, cyrus.storage) are imported inside helper functions
+Lazy-import policy: heavyweight modules (sekha.tools, sekha.schemas,
+sekha.search, sekha.storage) are imported inside helper functions
 AFTER harden_stdio() has run. Keeps the window during which a stray
 print from a third-party transitive import could corrupt the protocol
 stream vanishingly small.
@@ -20,7 +20,7 @@ notifications). Tests call it directly; the stdio loop in main() wires
 parse -> handle_request -> emit around it.
 """
 # Requirement coverage:
-#   MCP-01: `cyrus serve` entrypoint (long-lived stdio JSON-RPC loop)
+#   MCP-01: `sekha serve` entrypoint (long-lived stdio JSON-RPC loop)
 #   MCP-02: protocol-version negotiation across all three accepted versions
 #   MCP-11: no print() in server.py (hard CI lint gate)
 #   MCP-12: subprocess-driven handshake survival (verified in Task 2 tests)
@@ -29,11 +29,11 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-# Deliberately NO top-level imports from cyrus.tools / .search / .schemas /
+# Deliberately NO top-level imports from sekha.tools / .search / .schemas /
 # .storage — see module docstring. handle_request() uses lazy imports so
 # the only module cost paid on handshake-critical methods (initialize,
-# ping, notifications) is cyrus.jsonrpc + cyrus.logutil.
-from cyrus.jsonrpc import (
+# ping, notifications) is sekha.jsonrpc + sekha.logutil.
+from sekha.jsonrpc import (
     ACCEPTED_PROTOCOL_VERSIONS,
     INTERNAL_ERROR,
     INVALID_PARAMS,
@@ -45,7 +45,7 @@ from cyrus.jsonrpc import (
     harden_stdio,
     parse,
 )
-from cyrus.logutil import get_logger
+from sekha.logutil import get_logger
 
 _log = get_logger(__name__)
 
@@ -56,7 +56,7 @@ _PREFERRED_VERSION = "2025-03-26"
 
 
 def _server_version() -> str:
-    """Return the installed cyrus package version, or '0.0.0' in dev.
+    """Return the installed sekha package version, or '0.0.0' in dev.
 
     importlib.metadata.version() raises PackageNotFoundError in editable
     checkouts that haven't been `pip install -e .`'d yet; tests and dev
@@ -66,7 +66,7 @@ def _server_version() -> str:
     try:
         from importlib.metadata import PackageNotFoundError, version
         try:
-            return version("cyrus")
+            return version("sekha")
         except PackageNotFoundError:
             return "0.0.0"
     except ImportError:  # pragma: no cover — stdlib on 3.8+
@@ -88,19 +88,19 @@ def _initialize(params: dict[str, Any]) -> dict[str, Any]:
     )
     return {
         "protocolVersion": echo,
-        "serverInfo": {"name": "cyrus", "version": _server_version()},
+        "serverInfo": {"name": "sekha", "version": _server_version()},
         "capabilities": {"tools": {}},
     }
 
 
 def _tools_list() -> dict[str, Any]:
-    """Return the tools/list result. Lazy-imports cyrus.schemas."""
-    from cyrus.schemas import TOOLS
+    """Return the tools/list result. Lazy-imports sekha.schemas."""
+    from sekha.schemas import TOOLS
     return {"tools": TOOLS}
 
 
 def _tools_call(params: dict[str, Any]) -> dict[str, Any]:
-    """Dispatch to a cyrus_* handler.
+    """Dispatch to a sekha_* handler.
 
     Unknown tool name -> raises JsonRpcError(METHOD_NOT_FOUND); the outer
     handle_request converts that to a JSON-RPC error response (spec-
@@ -117,7 +117,7 @@ def _tools_call(params: dict[str, Any]) -> dict[str, Any]:
     tools/call handler failures are NOT JSON-RPC errors; they are data.
     """
     import json as _json
-    from cyrus.tools import HANDLERS
+    from sekha.tools import HANDLERS
 
     name = params.get("name")
     arguments = params.get("arguments") or {}
@@ -193,7 +193,7 @@ def handle_request(
             return None
         elif method == "notifications/cancelled":
             _log.info(
-                "cyrus.server: notifications/cancelled requestId=%s",
+                "sekha.server: notifications/cancelled requestId=%s",
                 params.get("requestId"),
             )
             return None
@@ -226,7 +226,7 @@ def handle_request(
             "error": {"code": e.code, "message": str(e)},
         }
     except Exception as e:  # noqa: BLE001 — fail-loud but survive the loop
-        _log.exception("cyrus.server: handler crashed on %s", method)
+        _log.exception("sekha.server: handler crashed on %s", method)
         if is_notification:
             return None
         return {
@@ -251,7 +251,7 @@ def main() -> int:
     FIRST action: harden_stdio(), which swaps sys.stdout -> sys.stderr so
     any stray print from downstream imports cannot corrupt the protocol
     stream, and returns a protected real-stdout handle that we write every
-    JSON-RPC response through. Called BEFORE any cyrus.tools / .schemas /
+    JSON-RPC response through. Called BEFORE any sekha.tools / .schemas /
     .search / .storage import reaches this module (those are lazy-imported
     inside the _tools_* helpers).
 
@@ -262,7 +262,7 @@ def main() -> int:
     """
     protected_stdout = harden_stdio()
 
-    _log.info("cyrus.server: started")
+    _log.info("sekha.server: started")
     try:
         for line in sys.stdin:
             if not line.strip():

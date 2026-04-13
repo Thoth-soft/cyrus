@@ -1,8 +1,8 @@
-"""Private helpers for cyrus.rules.
+"""Private helpers for sekha.rules.
 
 Frontmatter parsing, regex anchoring, tool_input flattening, and dir cache-key
 computation. Not a public API — every function is underscore-prefixed and
-subject to change. Public surface is re-exported piecemeal by `cyrus.rules`.
+subject to change. Public surface is re-exported piecemeal by `sekha.rules`.
 
 Design notes:
 - `_anchor_pattern` is idempotent: a pattern already carrying `^`/`$` is not
@@ -13,18 +13,18 @@ Design notes:
   `default=str` is a safety net for non-JSON types (Path, datetime) that
   occasionally appear in tool_input payloads.
 - `_parse_rule_file` is strict: missing required fields, invalid severity
-  values, and broken regex all raise ValueError. Callers (cyrus.rules.load_rules)
+  values, and broken regex all raise ValueError. Callers (sekha.rules.load_rules)
   convert these into loud stderr warnings and skip the offending file — we
   intentionally refuse to silently ignore bad rules, per RULES-02.
 - `_dir_cache_key` uses `(file_count, max_mtime)` — a file added or touched
   changes at least one component. Delete-without-replace is detected because
   the count drops. We deliberately do NOT hash file contents: that would shift
   the cost from cache-miss (already acceptable) to every cache-hit.
-- `Rule` is defined in `cyrus.rules` to keep the public dataclass in the public
+- `Rule` is defined in `sekha.rules` to keep the public dataclass in the public
   module. We import it lazily inside `_parse_rule_file` to avoid a circular
   import at module-load time.
 
-Stdlib only. No logging in this module — helpers are pure; `cyrus.rules` does
+Stdlib only. No logging in this module — helpers are pure; `sekha.rules` does
 the logging around them.
 """
 from __future__ import annotations
@@ -34,10 +34,10 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from cyrus.storage import parse_frontmatter
+from sekha.storage import parse_frontmatter
 
 if TYPE_CHECKING:
-    from cyrus.rules import Rule
+    from sekha.rules import Rule
 
 _REQUIRED_FIELDS: tuple[str, ...] = ("severity", "triggers", "matches", "pattern")
 _VALID_SEVERITIES: frozenset[str] = frozenset({"block", "warn"})
@@ -80,11 +80,11 @@ def _parse_rule_file(path: Path) -> "Rule":
     """Parse a rule markdown file into a `Rule` instance.
 
     Strict: raises ValueError on missing required fields, invalid severity,
-    or broken regex. Callers (cyrus.rules.load_rules) catch and log-and-skip;
+    or broken regex. Callers (sekha.rules.load_rules) catch and log-and-skip;
     individual-file consumers (test_rule) let the error propagate.
     """
-    # Lazy import: Rule lives in cyrus.rules, which imports from us.
-    from cyrus.rules import Rule
+    # Lazy import: Rule lives in sekha.rules, which imports from us.
+    from sekha.rules import Rule
 
     text = path.read_text(encoding="utf-8")
     meta, body = parse_frontmatter(text)

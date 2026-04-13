@@ -1,4 +1,4 @@
-"""Tests for cyrus.jsonrpc: error codes, parse, emit, emit_error, harden_stdio.
+"""Tests for sekha.jsonrpc: error codes, parse, emit, emit_error, harden_stdio.
 
 RED stage for Plan 05-01 Task 1. Covers the protocol layer's stdio hygiene
 primitives that killed MemPalace when they were wrong. Every test uses
@@ -13,7 +13,7 @@ import sys
 import unittest
 from unittest import mock
 
-from cyrus.jsonrpc import (
+from sekha.jsonrpc import (
     ACCEPTED_PROTOCOL_VERSIONS,
     INTERNAL_ERROR,
     INVALID_PARAMS,

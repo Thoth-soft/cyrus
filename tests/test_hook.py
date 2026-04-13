@@ -1,12 +1,12 @@
-"""Tests for cyrus.hook: PreToolUse decision pipeline + fail-open + kill switch.
+"""Tests for sekha.hook: PreToolUse decision pipeline + fail-open + kill switch.
 
 Plan 04-01 Task 2 — RED stage. Module does not yet exist. The GREEN step
-lands `src/cyrus/hook.py` with a `_run(stdin, stdout, stderr) -> int` helper
+lands `src/sekha/hook.py` with a `_run(stdin, stdout, stderr) -> int` helper
 that tests call directly (avoids monkey-patching sys.std*).
 
 Isolation:
-- Every test overrides CYRUS_HOME to a tempdir + writes rule fixtures there.
-- cyrus.rules.clear_cache() is called in setUp so tests see a fresh rule
+- Every test overrides SEKHA_HOME to a tempdir + writes rule fixtures there.
+- sekha.rules.clear_cache() is called in setUp so tests see a fresh rule
   parse (the rules module mtime-caches the parsed list per directory).
 - tests swap sys.stdout explicitly inside _run, and restore on exit, so
   running these tests via `python -m unittest` must not leak the swap.
@@ -85,20 +85,20 @@ def _write_warn_rule(
 
 class _HookTestBase(unittest.TestCase):
     def setUp(self) -> None:
-        self._saved_home = os.environ.pop("CYRUS_HOME", None)
+        self._saved_home = os.environ.pop("SEKHA_HOME", None)
         self._tmp = tempfile.TemporaryDirectory()
-        os.environ["CYRUS_HOME"] = self._tmp.name
-        self.cyrus_home = Path(self._tmp.name)
-        self.rules_dir = self.cyrus_home / "rules"
+        os.environ["SEKHA_HOME"] = self._tmp.name
+        self.sekha_home = Path(self._tmp.name)
+        self.rules_dir = self.sekha_home / "rules"
         # Fresh rule-cache per test — the Phase 3 engine caches across dirs.
-        from cyrus.rules import clear_cache
+        from sekha.rules import clear_cache
         clear_cache()
 
     def tearDown(self) -> None:
-        os.environ.pop("CYRUS_HOME", None)
+        os.environ.pop("SEKHA_HOME", None)
         if self._saved_home is not None:
-            os.environ["CYRUS_HOME"] = self._saved_home
-        from cyrus.rules import clear_cache
+            os.environ["SEKHA_HOME"] = self._saved_home
+        from sekha.rules import clear_cache
         clear_cache()
         self._tmp.cleanup()
 
@@ -108,7 +108,7 @@ class _HookTestBase(unittest.TestCase):
 
 class TestDecisionPipeline(_HookTestBase):
     def test_block_rule_produces_deny_json_and_exit_2(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         _write_block_rule(self.rules_dir)
         stdout, stderr = io.StringIO(), io.StringIO()
         rc = _run(self._stdin("bash_rm_rf.json"), stdout, stderr)
@@ -125,7 +125,7 @@ class TestDecisionPipeline(_HookTestBase):
         self.assertIn("rm -rf is not allowed", stderr.getvalue())
 
     def test_warn_rule_produces_additional_context_and_exit_0(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         _write_warn_rule(self.rules_dir)
         stdout, stderr = io.StringIO(), io.StringIO()
         rc = _run(self._stdin("bash_rm_rf.json"), stdout, stderr)
@@ -135,7 +135,7 @@ class TestDecisionPipeline(_HookTestBase):
         self.assertNotIn("permissionDecision", payload["hookSpecificOutput"])
 
     def test_no_match_produces_empty_stdout_exit_0(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         # Block rule scoped to Bash, but event is Write → no match.
         _write_block_rule(self.rules_dir)
         stdout, stderr = io.StringIO(), io.StringIO()
@@ -145,7 +145,7 @@ class TestDecisionPipeline(_HookTestBase):
         self.assertEqual(stderr.getvalue(), "")
 
     def test_no_rules_dir_produces_empty_stdout_exit_0(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         # Do NOT create rules_dir → load_rules sees missing dir → empty list.
         stdout, stderr = io.StringIO(), io.StringIO()
         rc = _run(self._stdin("bash_rm_rf.json"), stdout, stderr)
@@ -154,7 +154,7 @@ class TestDecisionPipeline(_HookTestBase):
         self.assertEqual(stderr.getvalue(), "")
 
     def test_block_beats_warn_precedence(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         _write_warn_rule(self.rules_dir, name="warn-x", priority=10)
         _write_block_rule(self.rules_dir, name="block-x", priority=1)
         stdout, stderr = io.StringIO(), io.StringIO()
@@ -168,22 +168,22 @@ class TestDecisionPipeline(_HookTestBase):
 
 class TestFailOpen(_HookTestBase):
     def test_malformed_stdin_triggers_fail_open(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         stdout, stderr = io.StringIO(), io.StringIO()
         rc = _run(io.StringIO("not-json-garbage"), stdout, stderr)
         self.assertEqual(rc, 0)
         self.assertEqual(stdout.getvalue(), "")
-        self.assertIn("cyrus hook error:", stderr.getvalue())
-        log_path = self.cyrus_home / "hook-errors.log"
+        self.assertIn("sekha hook error:", stderr.getvalue())
+        log_path = self.sekha_home / "hook-errors.log"
         self.assertTrue(log_path.exists())
         self.assertIn("JSON", log_path.read_text(encoding="utf-8"))
 
 
 class TestKillSwitch(_HookTestBase):
     def test_kill_switch_marker_short_circuits(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         _write_block_rule(self.rules_dir)  # would otherwise block
-        marker = self.cyrus_home / "hook-disabled.marker"
+        marker = self.sekha_home / "hook-disabled.marker"
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.touch()
 
@@ -192,13 +192,13 @@ class TestKillSwitch(_HookTestBase):
         self.assertEqual(rc, 0)
         self.assertEqual(stdout.getvalue(), "")
         # No error log either — this is a clean short-circuit, not a failure.
-        self.assertFalse((self.cyrus_home / "hook-errors.log").exists())
+        self.assertFalse((self.sekha_home / "hook-errors.log").exists())
 
     def test_three_errors_in_window_create_marker(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         # Seed log with 2 recent errors so the 3rd fail-open trips the switch.
         from datetime import datetime, timedelta, timezone
-        log = self.cyrus_home / "hook-errors.log"
+        log = self.sekha_home / "hook-errors.log"
         log.parent.mkdir(parents=True, exist_ok=True)
         now = datetime.now(timezone.utc)
         lines = []
@@ -213,14 +213,14 @@ class TestKillSwitch(_HookTestBase):
         stdout, stderr = io.StringIO(), io.StringIO()
         rc = _run(io.StringIO("not-json"), stdout, stderr)
         self.assertEqual(rc, 0)
-        marker = self.cyrus_home / "hook-disabled.marker"
+        marker = self.sekha_home / "hook-disabled.marker"
         self.assertTrue(marker.exists(),
                         "3rd error within 10 min should create kill marker")
 
 
 class TestStdoutSacred(_HookTestBase):
     def test_stdout_is_sacred_no_stray_prints(self) -> None:
-        from cyrus.hook import _run
+        from sekha.hook import _run
         _write_block_rule(self.rules_dir)
         stdout, stderr = io.StringIO(), io.StringIO()
         _run(self._stdin("bash_rm_rf.json"), stdout, stderr)
@@ -240,7 +240,7 @@ class TestModuleTopImportsAreLazy(unittest.TestCase):
     """Static guard: top of hook.py must only import sys and json."""
 
     def test_top_of_hook_py_imports_only_sys_and_json(self) -> None:
-        src = Path(__file__).resolve().parents[1] / "src" / "cyrus" / "hook.py"
+        src = Path(__file__).resolve().parents[1] / "src" / "sekha" / "hook.py"
         tree = ast.parse(src.read_text(encoding="utf-8"))
         top_names: list[str] = []
         for node in tree.body:
@@ -257,7 +257,7 @@ class TestModuleTopImportsAreLazy(unittest.TestCase):
 
 
 class TestImportTime(unittest.TestCase):
-    """Informational: cyrus.hook should import fast (target <30ms).
+    """Informational: sekha.hook should import fast (target <30ms).
 
     Windows cold-start is noisy; we run 3 times and accept the median. If the
     median exceeds 100ms we flag but do NOT fail — the formal gate is the
@@ -265,15 +265,15 @@ class TestImportTime(unittest.TestCase):
     """
 
     @unittest.skipIf(
-        os.environ.get("CYRUS_SKIP_IMPORTTIME") == "1",
-        "importtime test disabled via CYRUS_SKIP_IMPORTTIME=1",
+        os.environ.get("SEKHA_SKIP_IMPORTTIME") == "1",
+        "importtime test disabled via SEKHA_SKIP_IMPORTTIME=1",
     )
-    def test_import_cyrus_hook_is_fast(self) -> None:
+    def test_import_sekha_hook_is_fast(self) -> None:
         samples: list[float] = []
         for _ in range(3):
             t0 = time.perf_counter()
             r = subprocess.run(
-                [sys.executable, "-c", "import cyrus.hook"],
+                [sys.executable, "-c", "import sekha.hook"],
                 capture_output=True, text=True, timeout=15,
             )
             dt = (time.perf_counter() - t0) * 1000
@@ -283,8 +283,8 @@ class TestImportTime(unittest.TestCase):
         median = samples[1]
         # Generous budget — includes Python cold-start, which on Windows is
         # already 100-250ms. We're guarding against regressions that add
-        # hundreds of ms (e.g., accidental `from cyrus.rules import *`).
-        # The real 30ms budget is about the cyrus.hook *module* import time,
+        # hundreds of ms (e.g., accidental `from sekha.rules import *`).
+        # The real 30ms budget is about the sekha.hook *module* import time,
         # enforced structurally by the ast test in TestModuleTopImportsAreLazy.
         self.assertLess(
             median, 2000,

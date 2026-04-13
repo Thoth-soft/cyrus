@@ -1,4 +1,4 @@
-"""Tests for cyrus.schemas: TOOLS constant (6 cyrus_* tool descriptors).
+"""Tests for sekha.schemas: TOOLS constant (6 sekha_* tool descriptors).
 
 RED stage for Plan 05-01 Task 2. These schemas are the source of truth
 for the MCP `tools/list` response; they must match 05-CONTEXT.md exactly
@@ -8,16 +8,16 @@ from __future__ import annotations
 
 import unittest
 
-from cyrus.schemas import TOOLS, TOOLS_BY_NAME
+from sekha.schemas import TOOLS, TOOLS_BY_NAME
 
 
 EXPECTED_NAMES = {
-    "cyrus_save",
-    "cyrus_search",
-    "cyrus_list",
-    "cyrus_delete",
-    "cyrus_status",
-    "cyrus_add_rule",
+    "sekha_save",
+    "sekha_search",
+    "sekha_list",
+    "sekha_delete",
+    "sekha_status",
+    "sekha_add_rule",
 }
 
 
@@ -28,11 +28,11 @@ class TestSchemas(unittest.TestCase):
         self.assertEqual(len(TOOLS), 6)
 
     # 2.
-    def test_tool_names_are_cyrus_prefixed_and_complete(self):
+    def test_tool_names_are_sekha_prefixed_and_complete(self):
         names = {t["name"] for t in TOOLS}
         self.assertEqual(names, EXPECTED_NAMES)
         for name in names:
-            self.assertTrue(name.startswith("cyrus_"), name)
+            self.assertTrue(name.startswith("sekha_"), name)
 
     # 3.
     def test_every_tool_has_name_description_inputschema(self):
@@ -51,9 +51,9 @@ class TestSchemas(unittest.TestCase):
             self.assertIn("properties", schema, t["name"])
             self.assertIsInstance(schema["properties"], dict)
 
-    # 5. cyrus_save
-    def test_cyrus_save_required_and_category_enum(self):
-        save = TOOLS_BY_NAME["cyrus_save"]
+    # 5. sekha_save
+    def test_sekha_save_required_and_category_enum(self):
+        save = TOOLS_BY_NAME["sekha_save"]
         schema = save["inputSchema"]
         self.assertEqual(schema["required"], ["category", "content"])
         self.assertEqual(
@@ -63,37 +63,37 @@ class TestSchemas(unittest.TestCase):
         self.assertEqual(schema["properties"]["content"]["type"], "string")
         self.assertEqual(schema["properties"]["tags"]["type"], "array")
 
-    # 6. cyrus_search
-    def test_cyrus_search_required_and_defaults(self):
-        search = TOOLS_BY_NAME["cyrus_search"]
+    # 6. sekha_search
+    def test_sekha_search_required_and_defaults(self):
+        search = TOOLS_BY_NAME["sekha_search"]
         schema = search["inputSchema"]
         self.assertEqual(schema["required"], ["query"])
         self.assertEqual(schema["properties"]["limit"]["default"], 10)
 
-    # 7. cyrus_list
-    def test_cyrus_list_has_no_required(self):
-        clist = TOOLS_BY_NAME["cyrus_list"]
+    # 7. sekha_list
+    def test_sekha_list_has_no_required(self):
+        clist = TOOLS_BY_NAME["sekha_list"]
         schema = clist["inputSchema"]
         required = schema.get("required", [])
         self.assertEqual(required, [])
         self.assertEqual(schema["properties"]["limit"]["default"], 20)
 
-    # 8. cyrus_delete
-    def test_cyrus_delete_requires_path(self):
-        cdel = TOOLS_BY_NAME["cyrus_delete"]
+    # 8. sekha_delete
+    def test_sekha_delete_requires_path(self):
+        cdel = TOOLS_BY_NAME["sekha_delete"]
         self.assertEqual(cdel["inputSchema"]["required"], ["path"])
         self.assertEqual(
             cdel["inputSchema"]["properties"]["path"]["type"], "string"
         )
 
-    # 9. cyrus_status
-    def test_cyrus_status_takes_no_params(self):
-        cstat = TOOLS_BY_NAME["cyrus_status"]
+    # 9. sekha_status
+    def test_sekha_status_takes_no_params(self):
+        cstat = TOOLS_BY_NAME["sekha_status"]
         self.assertEqual(cstat["inputSchema"]["properties"], {})
 
-    # 10. cyrus_add_rule
-    def test_cyrus_add_rule_required_fields(self):
-        car = TOOLS_BY_NAME["cyrus_add_rule"]
+    # 10. sekha_add_rule
+    def test_sekha_add_rule_required_fields(self):
+        car = TOOLS_BY_NAME["sekha_add_rule"]
         schema = car["inputSchema"]
         required = set(schema["required"])
         self.assertTrue(

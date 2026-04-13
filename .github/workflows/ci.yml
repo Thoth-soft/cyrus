@@ -44,29 +44,29 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install package (simulates `pip install cyrus` on fresh VM)
+      - name: Install package (simulates `pip install sekha` on fresh VM)
         run: pip install -e .
 
-      - name: Verify cyrus console script is on PATH
+      - name: Verify sekha console script is on PATH
         shell: bash
         run: |
-          which cyrus || command -v cyrus
-          cyrus --help
+          which sekha || command -v sekha
+          sekha --help
 
-      - name: Run cyrus init
+      - name: Run sekha init
         shell: bash
         run: |
-          cyrus init
-          echo "--- ~/.cyrus/ tree ---"
-          ls -la "$HOME/.cyrus" || dir "%USERPROFILE%\\.cyrus"
+          sekha init
+          echo "--- ~/.sekha/ tree ---"
+          ls -la "$HOME/.sekha" || dir "%USERPROFILE%\\.sekha"
           echo "--- ~/.claude/settings.json ---"
           cat "$HOME/.claude/settings.json" || type "%USERPROFILE%\\.claude\\settings.json"
 
-      - name: Run cyrus doctor (JSON mode) and assert critical checks pass
+      - name: Run sekha doctor (JSON mode) and assert critical checks pass
         shell: bash
         run: |
           set -euo pipefail
-          cyrus doctor --json > doctor.json
+          sekha doctor --json > doctor.json
           cat doctor.json
           python - <<'PY'
           import json, sys
@@ -74,8 +74,8 @@ jobs:
           checks = {c["name"]: c for c in data["checks"]}
           required = [
               "python_version",
-              "cyrus_on_path",
-              "cyrus_home_writable",
+              "sekha_on_path",
+              "sekha_home_writable",
               "settings_hook_registered",
               "mcp_canary",
               "kill_switch",
@@ -89,11 +89,11 @@ jobs:
           print("All required doctor checks passed.")
           PY
 
-      - name: Run cyrus init again (idempotency smoke)
+      - name: Run sekha init again (idempotency smoke)
         shell: bash
         run: |
           set -euo pipefail
-          cyrus init
+          sekha init
           python - <<'PY'
           import json, os
           p = os.path.expanduser("~/.claude/settings.json")
@@ -101,8 +101,8 @@ jobs:
           count = 0
           for entry in (data.get("hooks") or {}).get("PreToolUse") or []:
               for h in entry.get("hooks") or []:
-                  if h.get("command") == "cyrus hook run":
+                  if h.get("command") == "sekha hook run":
                       count += 1
-          assert count == 1, f"expected exactly 1 cyrus hook entry, got {count}"
-          print("Idempotency OK: exactly one cyrus hook entry.")
+          assert count == 1, f"expected exactly 1 sekha hook entry, got {count}"
+          print("Idempotency OK: exactly one sekha hook entry.")
           PY

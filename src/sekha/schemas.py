@@ -1,4 +1,4 @@
-"""Hand-written JSON schemas for the 6 Cyrus MCP tools.
+"""Hand-written JSON schemas for the 6 Sekha MCP tools.
 
 Source of truth for the MCP `tools/list` response. Every schema is
 authored by hand — we ship no jsonschema runtime dependency (stdlib-only
@@ -6,8 +6,8 @@ policy, Zero runtime deps per CONTRIBUTING.md) — and is intentionally
 small so Claude Code's tool-card renderer can display them readably.
 
 Consumed by:
-  - cyrus.tools.HANDLERS dispatch table (name -> handler)
-  - cyrus.server (Plan 05-02) `tools/list` method returns TOOLS verbatim
+  - sekha.tools.HANDLERS dispatch table (name -> handler)
+  - sekha.server (Plan 05-02) `tools/list` method returns TOOLS verbatim
 
 Any change here is also a change to the MCP protocol surface: update
 REQUIREMENTS.md MCP-03..MCP-09 if the set of tools or their required
@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from cyrus.paths import CATEGORIES
+from sekha.paths import CATEGORIES
 
 # --------------------------------------------------------------------------
 # TOOLS — ordered for stable output on tools/list. Ordering has no protocol
@@ -26,7 +26,7 @@ from cyrus.paths import CATEGORIES
 # --------------------------------------------------------------------------
 TOOLS: list[dict[str, Any]] = [
     {
-        "name": "cyrus_save",
+        "name": "sekha_save",
         "description": (
             "Save a memory. category must be one of: "
             + ", ".join(CATEGORIES) + "."
@@ -49,7 +49,7 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "cyrus_search",
+        "name": "sekha_search",
         "description": (
             "Full-text search over saved memories, ranked by term "
             "frequency * recency * filename match."
@@ -69,7 +69,7 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "cyrus_list",
+        "name": "sekha_list",
         "description": (
             "List memories in a category with metadata only (no body "
             "content)."
@@ -88,7 +88,7 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "cyrus_delete",
+        "name": "sekha_delete",
         "description": "Delete a memory by path. Returns success/failure.",
         "inputSchema": {
             "type": "object",
@@ -99,7 +99,7 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "cyrus_status",
+        "name": "sekha_status",
         "description": (
             "Return total memory count, category breakdown, rules count, "
             "recent activity, hook error count."
@@ -110,7 +110,7 @@ TOOLS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "cyrus_add_rule",
+        "name": "sekha_add_rule",
         "description": (
             "Create a new rule file. Validates regex compiles before "
             "writing."

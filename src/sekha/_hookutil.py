@@ -1,7 +1,7 @@
-"""Private helpers for cyrus.hook: JSON I/O, fail-open logging, kill switch.
+"""Private helpers for sekha.hook: JSON I/O, fail-open logging, kill switch.
 
-Lightweight by design — imported from inside `cyrus.hook._run()` along with
-other dependencies. Only stdlib + cyrus.paths. No cyrus.rules / storage / search
+Lightweight by design — imported from inside `sekha.hook._run()` along with
+other dependencies. Only stdlib + sekha.paths. No sekha.rules / storage / search
 imports (those belong inside hook.main so the PreToolUse fast path can skip
 them when the kill switch is tripped).
 
@@ -28,7 +28,7 @@ Kill-switch constants (HOOK-07):
 #   HOOK-03: emit_block emits the exact deny shape
 #   HOOK-04: emit_warn emits the exact additionalContext shape
 #   HOOK-05: emit_block writes reason to stderr AND returns exit code 2
-#   HOOK-06: fail_open appends to ~/.cyrus/hook-errors.log + stderr warning
+#   HOOK-06: fail_open appends to ~/.sekha/hook-errors.log + stderr warning
 #   HOOK-07: record_error + create_marker trip after 3 errors within 10 min
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TextIO
 
-from cyrus.paths import cyrus_home
+from sekha.paths import sekha_home
 
 __all__ = (
     "read_event",
@@ -60,13 +60,13 @@ _TAIL_LINES = 40  # ~10 error entries at 4 lines each — covers threshold + sla
 
 
 def error_log_path() -> Path:
-    """Path to ~/.cyrus/hook-errors.log (honors CYRUS_HOME)."""
-    return cyrus_home() / "hook-errors.log"
+    """Path to ~/.sekha/hook-errors.log (honors SEKHA_HOME)."""
+    return sekha_home() / "hook-errors.log"
 
 
 def marker_path() -> Path:
-    """Path to ~/.cyrus/hook-disabled.marker (honors CYRUS_HOME)."""
-    return cyrus_home() / "hook-disabled.marker"
+    """Path to ~/.sekha/hook-disabled.marker (honors SEKHA_HOME)."""
+    return sekha_home() / "hook-disabled.marker"
 
 
 def read_event(stream: TextIO) -> dict[str, Any]:
@@ -130,7 +130,7 @@ def fail_open(exc: BaseException, stderr: TextIO) -> int:
     """Log the exception to hook-errors.log and warn on stderr; always return 0.
 
     Creates the parent directory if missing so a brand-new install with no
-    ~/.cyrus/ yet still captures the error. The log entry format is:
+    ~/.sekha/ yet still captures the error. The log entry format is:
 
         <ISO-8601 UTC> <ExceptionType>: <message>
         <full traceback>
@@ -145,7 +145,7 @@ def fail_open(exc: BaseException, stderr: TextIO) -> int:
         f.write(f"{ts} {type(exc).__name__}: {exc}\n")
         f.write(traceback.format_exc())
         f.write("\n")
-    stderr.write(f"cyrus hook error: {exc}\n")
+    stderr.write(f"sekha hook error: {exc}\n")
     return 0
 
 
@@ -185,7 +185,7 @@ def record_error(exc: BaseException) -> bool:  # noqa: ARG001 — exc kept for f
 
 
 def check_kill_switch() -> bool:
-    """True iff the kill-switch marker file exists under CYRUS_HOME."""
+    """True iff the kill-switch marker file exists under SEKHA_HOME."""
     return marker_path().exists()
 
 

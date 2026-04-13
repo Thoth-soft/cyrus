@@ -1,4 +1,4 @@
-"""Tests for cyrus._cliutil: ASCII table, settings merge, atomic JSON write, say helpers.
+"""Tests for sekha._cliutil: ASCII table, settings merge, atomic JSON write, say helpers.
 
 Plan 06-01 Task 1 — RED stage. Module does not yet exist at test-write time.
 
@@ -25,7 +25,7 @@ from unittest import mock
 
 class TestFormatTable(unittest.TestCase):
     def test_headers_and_rows_appear_in_output(self) -> None:
-        from cyrus._cliutil import format_table
+        from sekha._cliutil import format_table
         out = format_table(["A", "BB"], [["x", "yy"]])
         self.assertIn("A", out)
         self.assertIn("BB", out)
@@ -33,20 +33,20 @@ class TestFormatTable(unittest.TestCase):
         self.assertIn("yy", out)
 
     def test_output_is_ascii_only(self) -> None:
-        from cyrus._cliutil import format_table
+        from sekha._cliutil import format_table
         out = format_table(["NAME", "SEVERITY"], [["foo", "block"], ["bar", "warn"]])
         # Must not raise — cp1252-safe on Windows cmd.exe
         out.encode("ascii")
 
     def test_empty_rows_produces_header(self) -> None:
-        from cyrus._cliutil import format_table
+        from sekha._cliutil import format_table
         out = format_table(["A", "B"], [])
         # No crash; header names present.
         self.assertIn("A", out)
         self.assertIn("B", out)
 
     def test_no_unicode_box_drawing_chars(self) -> None:
-        from cyrus._cliutil import format_table
+        from sekha._cliutil import format_table
         out = format_table(["A", "B"], [["1", "2"]])
         # Every char must be printable ASCII 0x20-0x7E OR newline/CR.
         for ch in out:
@@ -57,7 +57,7 @@ class TestFormatTable(unittest.TestCase):
             )
 
     def test_column_alignment(self) -> None:
-        from cyrus._cliutil import format_table
+        from sekha._cliutil import format_table
         out = format_table(["A", "B"], [["short", "x"], ["longer-value", "yy"]])
         # Simple sanity: the output contains the literal strings.
         self.assertIn("short", out)
@@ -66,7 +66,7 @@ class TestFormatTable(unittest.TestCase):
 
 class TestMergeClaudeSettings(unittest.TestCase):
     def test_empty_input_adds_pretooluse(self) -> None:
-        from cyrus._cliutil import merge_claude_settings
+        from sekha._cliutil import merge_claude_settings
         merged, changed = merge_claude_settings({})
         self.assertTrue(changed)
         entries = merged["hooks"]["PreToolUse"]
@@ -74,18 +74,18 @@ class TestMergeClaudeSettings(unittest.TestCase):
         self.assertEqual(entries[0]["matcher"], "*")
         self.assertEqual(
             entries[0]["hooks"],
-            [{"type": "command", "command": "cyrus hook run"}],
+            [{"type": "command", "command": "sekha hook run"}],
         )
 
     def test_idempotent_second_run(self) -> None:
-        from cyrus._cliutil import merge_claude_settings
+        from sekha._cliutil import merge_claude_settings
         first, _ = merge_claude_settings({})
         second, changed = merge_claude_settings(first)
         self.assertFalse(changed)
         self.assertEqual(first, second)
 
     def test_preserves_unrelated_user_entry(self) -> None:
-        from cyrus._cliutil import merge_claude_settings
+        from sekha._cliutil import merge_claude_settings
         existing = {
             "hooks": {
                 "PreToolUse": [
@@ -107,10 +107,10 @@ class TestMergeClaudeSettings(unittest.TestCase):
             for h in entry.get("hooks", []):
                 commands.append(h.get("command", ""))
         self.assertIn("user-linter", commands)
-        self.assertIn("cyrus hook run", commands)
+        self.assertIn("sekha hook run", commands)
 
     def test_hooks_without_pretooluse_gets_array(self) -> None:
-        from cyrus._cliutil import merge_claude_settings
+        from sekha._cliutil import merge_claude_settings
         existing = {"hooks": {"PostToolUse": []}}
         merged, changed = merge_claude_settings(existing)
         self.assertTrue(changed)
@@ -118,15 +118,15 @@ class TestMergeClaudeSettings(unittest.TestCase):
         # PostToolUse preserved.
         self.assertIn("PostToolUse", merged["hooks"])
 
-    def test_recognizes_nested_existing_cyrus_entry(self) -> None:
-        from cyrus._cliutil import merge_claude_settings
+    def test_recognizes_nested_existing_sekha_entry(self) -> None:
+        from sekha._cliutil import merge_claude_settings
         existing = {
             "hooks": {
                 "PreToolUse": [
                     {
                         "matcher": "Bash",
                         "hooks": [
-                            {"type": "command", "command": "cyrus hook run"},
+                            {"type": "command", "command": "sekha hook run"},
                         ],
                     }
                 ]
@@ -139,7 +139,7 @@ class TestMergeClaudeSettings(unittest.TestCase):
 
 class TestBackupFile(unittest.TestCase):
     def test_existing_file_creates_bak(self) -> None:
-        from cyrus._cliutil import backup_file
+        from sekha._cliutil import backup_file
         with tempfile.TemporaryDirectory() as td:
             target = Path(td) / "settings.json"
             target.write_bytes(b'{"a": 1}')
@@ -152,7 +152,7 @@ class TestBackupFile(unittest.TestCase):
             self.assertTrue(bak.name.startswith("settings.json.bak."))
 
     def test_missing_file_returns_none(self) -> None:
-        from cyrus._cliutil import backup_file
+        from sekha._cliutil import backup_file
         with tempfile.TemporaryDirectory() as td:
             target = Path(td) / "does-not-exist.json"
             result = backup_file(target)
@@ -162,7 +162,7 @@ class TestBackupFile(unittest.TestCase):
             self.assertEqual(baks, [])
 
     def test_backup_name_is_ascii(self) -> None:
-        from cyrus._cliutil import backup_file
+        from sekha._cliutil import backup_file
         with tempfile.TemporaryDirectory() as td:
             target = Path(td) / "settings.json"
             target.write_bytes(b"{}")
@@ -173,7 +173,7 @@ class TestBackupFile(unittest.TestCase):
 
 class TestWriteJsonAtomic(unittest.TestCase):
     def test_writes_and_roundtrips(self) -> None:
-        from cyrus._cliutil import write_json_atomic
+        from sekha._cliutil import write_json_atomic
         with tempfile.TemporaryDirectory() as td:
             target = Path(td) / "out.json"
             data = {"b": 2, "a": 1}
@@ -181,14 +181,14 @@ class TestWriteJsonAtomic(unittest.TestCase):
             self.assertEqual(json.loads(target.read_text(encoding="utf-8")), data)
 
     def test_creates_parent_dir(self) -> None:
-        from cyrus._cliutil import write_json_atomic
+        from sekha._cliutil import write_json_atomic
         with tempfile.TemporaryDirectory() as td:
             target = Path(td) / "nested" / "deep" / "out.json"
             write_json_atomic(target, {"x": 1})
             self.assertTrue(target.exists())
 
     def test_uses_indent_and_sort_keys(self) -> None:
-        from cyrus._cliutil import write_json_atomic
+        from sekha._cliutil import write_json_atomic
         with tempfile.TemporaryDirectory() as td:
             target = Path(td) / "out.json"
             write_json_atomic(target, {"b": 2, "a": 1})
@@ -201,20 +201,20 @@ class TestWriteJsonAtomic(unittest.TestCase):
 
 class TestSay(unittest.TestCase):
     def test_writes_to_stderr_by_default(self) -> None:
-        from cyrus._cliutil import say
+        from sekha._cliutil import say
         buf = io.StringIO()
         with mock.patch("sys.stderr", buf):
             say("hello")
         self.assertIn("hello", buf.getvalue())
 
     def test_appends_newline(self) -> None:
-        from cyrus._cliutil import say
+        from sekha._cliutil import say
         buf = io.StringIO()
         say("abc", stream=buf)
         self.assertTrue(buf.getvalue().endswith("\n"))
 
     def test_ascii_passthrough(self) -> None:
-        from cyrus._cliutil import say
+        from sekha._cliutil import say
         buf = io.StringIO()
         say("[OK] ready", stream=buf)
         self.assertEqual(buf.getvalue(), "[OK] ready\n")

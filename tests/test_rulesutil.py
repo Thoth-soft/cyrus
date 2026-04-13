@@ -1,9 +1,9 @@
-"""Tests for cyrus._rulesutil: anchoring, flatten, compile, parse, cache-key.
+"""Tests for sekha._rulesutil: anchoring, flatten, compile, parse, cache-key.
 
 Plan 03-01 Task 1 — RED stage. The helpers under test do not yet exist; this
 module's import will fail with ModuleNotFoundError until Task 2 lands
-`src/cyrus/_rulesutil.py` alongside the Rule dataclass stub in
-`src/cyrus/rules.py`.
+`src/sekha/_rulesutil.py` alongside the Rule dataclass stub in
+`src/sekha/rules.py`.
 
 Design notes:
 - Tests exercise only the private helper surface. Public-API tests live in
@@ -24,14 +24,14 @@ import time
 import unittest
 from pathlib import Path
 
-from cyrus._rulesutil import (
+from sekha._rulesutil import (
     _anchor_pattern,
     _compile_rule_pattern,
     _dir_cache_key,
     _flatten_tool_input,
     _parse_rule_file,
 )
-from cyrus.rules import Rule
+from sekha.rules import Rule
 
 
 class TestAnchorPattern(unittest.TestCase):
@@ -227,7 +227,7 @@ class TestDirCacheKey(unittest.TestCase):
 
     def test_missing_dir_returns_zero_tuple(self):
         # Non-existent dir — must not raise
-        key = _dir_cache_key(Path(tempfile.gettempdir()) / "cyrus-nope-xyz-12345")
+        key = _dir_cache_key(Path(tempfile.gettempdir()) / "sekha-nope-xyz-12345")
         self.assertEqual(key, (0, 0.0))
 
     def test_key_changes_when_file_added(self):

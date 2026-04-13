@@ -1,16 +1,16 @@
-"""Public full-text search API for Cyrus. Stdlib-only.
+"""Public full-text search API for Sekha. Stdlib-only.
 
     search(query, category=None, limit=10, since=None, tags=None)
         -> list[SearchResult]
 
 Scoring is `tf * recency_decay(age_days) * filename_bonus(query, path)` —
-formulas and constants live in cyrus._searchutil. Walks the cyrus_home()
+formulas and constants live in sekha._searchutil. Walks the sekha_home()
 tree with `os.walk`, filters on category / updated / tags, then scores
 surviving files. Regex queries are routed through the _searchutil ReDoS
 guard; literal queries (no regex metacharacters) take a faster
 substring-count path.
 
-This module is the bedrock the Phase 5 MCP server's `cyrus_search` tool
+This module is the bedrock the Phase 5 MCP server's `sekha_search` tool
 imports directly. Keep the public surface stable — callers depend on the
 SearchResult dataclass field names and the keyword-argument shape of
 `search()`.
@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from cyrus._searchutil import (
+from sekha._searchutil import (
     _is_catastrophic_pattern,
     extract_snippet,
     filename_bonus,
@@ -34,9 +34,9 @@ from cyrus._searchutil import (
     recency_decay,
     scan_text,
 )
-from cyrus.logutil import get_logger
-from cyrus.paths import CATEGORIES, category_dir, cyrus_home
-from cyrus.storage import parse_frontmatter
+from sekha.logutil import get_logger
+from sekha.paths import CATEGORIES, category_dir, sekha_home
+from sekha.storage import parse_frontmatter
 
 _log = get_logger(__name__)
 
@@ -49,9 +49,9 @@ _REDOS_TIMEOUT_SECONDS = 0.1
 # measurably *slowed* search — the win from GIL-releasing os.read is eaten
 # by thread-pool bookkeeping at 10k tasks. Callers on filesystems with
 # true async I/O (some network mounts, Linux io_uring-backed drivers) can
-# set CYRUS_SEARCH_WORKERS=4 or similar to opt in.
+# set SEKHA_SEARCH_WORKERS=4 or similar to opt in.
 def _resolve_worker_count() -> int:
-    raw = os.environ.get("CYRUS_SEARCH_WORKERS")
+    raw = os.environ.get("SEKHA_SEARCH_WORKERS")
     if raw is None:
         return 1
     try:
@@ -100,7 +100,7 @@ def search(
     since: datetime | None = None,
     tags: list[str] | None = None,
 ) -> list[SearchResult]:
-    """Full-text search over cyrus_home() memory tree.
+    """Full-text search over sekha_home() memory tree.
 
     Returns up to `limit` SearchResult objects ordered by score descending,
     tie-broken by `metadata["updated"]` descending (lexicographic ISO-8601
@@ -118,7 +118,7 @@ def search(
     roots = (
         [category_dir(category)]
         if category is not None
-        else [cyrus_home() / c for c in CATEGORIES]
+        else [sekha_home() / c for c in CATEGORIES]
     )
     literal = is_literal_query(query)
     now = datetime.now(timezone.utc)
@@ -219,7 +219,7 @@ def search(
     # dominated by CPython+GIL transitions between kernel syscalls, so
     # parallel workers mostly add GIL contention and task-dispatch overhead
     # without winning back kernel-level concurrency. We keep the pool code
-    # path behind CYRUS_SEARCH_WORKERS>1 so users with exotic filesystems
+    # path behind SEKHA_SEARCH_WORKERS>1 so users with exotic filesystems
     # (e.g. network mounts with true async I/O) can opt in, but the default
     # is single-threaded.
     workers = _resolve_worker_count()

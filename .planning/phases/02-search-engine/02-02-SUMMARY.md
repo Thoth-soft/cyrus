@@ -1,27 +1,27 @@
 ---
 phase: 02-search-engine
 plan: 02
-subsystem: cyrus.search (benchmark + perf)
+subsystem: sekha.search (benchmark + perf)
 tags: [search, benchmark, perf, regression-gate, windows]
 requirements_completed: []
 requirements_deferred: [SEARCH-05]
 dependency_graph:
   requires:
-    - cyrus.paths.CATEGORIES
-    - cyrus.storage.{dump_frontmatter, atomic_write, parse_frontmatter}
-    - cyrus.search.search (instrumented under benchmark)
-    - cyrus._searchutil (scan_text hot path added)
+    - sekha.paths.CATEGORIES
+    - sekha.storage.{dump_frontmatter, atomic_write, parse_frontmatter}
+    - sekha.search.search (instrumented under benchmark)
+    - sekha._searchutil (scan_text hot path added)
   provides:
     - tests/fixtures/generate_corpus.generate_corpus
     - tests/test_search_bench.SearchBenchmark
-    - cyrus._searchutil.{count_literal, count_regex, scan_text}
+    - sekha._searchutil.{count_literal, count_regex, scan_text}
   affects:
     - Phase 2 exit gate (SEARCH-05: target 500ms p95, current 991ms p95 on Windows)
-    - cyrus.search hot path (optimized without public API change)
+    - sekha.search hot path (optimized without public API change)
 tech-stack:
   added: []
   patterns:
-    - Stdlib-only corpus generator (seeded random.Random + cyrus.storage)
+    - Stdlib-only corpus generator (seeded random.Random + sekha.storage)
     - unittest.skipUnless(env-var) gating to keep fast CI fast
     - Binary-mode pre-screen before utf-8 decode + frontmatter parse
     - Two-phase scoring: cheap phase-1 on all files, expensive phase-2 only on top-limit winners
@@ -33,11 +33,11 @@ key-files:
     - tests/test_search_bench.py
     - .planning/phases/02-search-engine/02-02-SUMMARY.md
   modified:
-    - src/cyrus/search.py
-    - src/cyrus/_searchutil.py
+    - src/sekha/search.py
+    - src/sekha/_searchutil.py
 decisions:
   - Corpus seed is locked at 0xC0FFEE — changing it invalidates historical perf numbers
-  - Benchmark gate is CYRUS_BENCH env var (default off); no CI matrix change, no fast-CI regression
+  - Benchmark gate is SEKHA_BENCH env var (default off); no CI matrix change, no fast-CI regression
   - Platform-aware p95 budget: 500ms on Linux/macOS, 1500ms on Windows — reflects NTFS per-file open cost
   - Optimizations preserved 58/58 prior tests (public API locked per Plan 02-01)
   - SEARCH-05 remains PENDING against its 500ms design target; the gap is architectural, not implementation
@@ -56,7 +56,7 @@ metrics:
 
 # Phase 2 Plan 02: 10k-File Search Benchmark Summary
 
-**One-liner:** Deterministic 10k-file corpus generator + CYRUS_BENCH-gated unittest that asserts a platform-aware p95 search latency budget, plus ~6x hot-path optimization of `cyrus.search` driven by the benchmark's findings.
+**One-liner:** Deterministic 10k-file corpus generator + SEKHA_BENCH-gated unittest that asserts a platform-aware p95 search latency budget, plus ~6x hot-path optimization of `sekha.search` driven by the benchmark's findings.
 
 ## What Shipped
 
@@ -68,24 +68,24 @@ A runnable script and importable library that produces byte-identical markdown-m
 - Uses ONLY a passed-in `random.Random(seed)` instance — never module-level `random` state.
 - Base date is a fixed epoch (`2026-01-01`), never `datetime.now()`, so "updated" timestamps are reproducible.
 - Idempotent: a second run with the same args writes 0 new files. The RNG stream is consumed unconditionally per file (before the skip check) so partial-corpus re-runs stay deterministic.
-- 50-word vocabulary + 10-tag vocabulary chosen so benchmark queries hit a predictable distribution (common terms like `jwt`, `cyrus`, `hook` appear in ~90% of files).
+- 50-word vocabulary + 10-tag vocabulary chosen so benchmark queries hit a predictable distribution (common terms like `jwt`, `sekha`, `hook` appear in ~90% of files).
 - CLI: `python -m tests.fixtures.generate_corpus --out DIR --count K --seed N` (default count=10_000, seed=0xC0FFEE).
 
 ### `tests/test_search_bench.py`
 
-A single `unittest.TestCase` gated by `unittest.skipUnless(CYRUS_BENCH)`:
+A single `unittest.TestCase` gated by `unittest.skipUnless(SEKHA_BENCH)`:
 
-- Default: `python -m unittest tests.test_search_bench` → reports `skipped 'Set CYRUS_BENCH=1 to run benchmark'`. Fast CI pays zero cost.
-- Full run: `CYRUS_BENCH=1 python -m unittest tests.test_search_bench -v` → builds the 10k corpus, warms the cache, runs 6 queries × 20 iterations, reports `[bench] n=120 mean=... p50=... p95=... p99=...` to stderr, asserts `p95 < budget`.
-- Reusable corpus: `CYRUS_BENCH_CORPUS=/tmp/cyrus-bench CYRUS_BENCH=1 python -m unittest tests.test_search_bench` — skips regeneration, accelerates local iteration.
-- Tighter budget on known-fast runners: `CYRUS_BENCH_P95_MS=500 CYRUS_BENCH=1 python -m unittest tests.test_search_bench` — overrides the platform default.
+- Default: `python -m unittest tests.test_search_bench` → reports `skipped 'Set SEKHA_BENCH=1 to run benchmark'`. Fast CI pays zero cost.
+- Full run: `SEKHA_BENCH=1 python -m unittest tests.test_search_bench -v` → builds the 10k corpus, warms the cache, runs 6 queries × 20 iterations, reports `[bench] n=120 mean=... p50=... p95=... p99=...` to stderr, asserts `p95 < budget`.
+- Reusable corpus: `SEKHA_BENCH_CORPUS=/tmp/sekha-bench SEKHA_BENCH=1 python -m unittest tests.test_search_bench` — skips regeneration, accelerates local iteration.
+- Tighter budget on known-fast runners: `SEKHA_BENCH_P95_MS=500 SEKHA_BENCH=1 python -m unittest tests.test_search_bench` — overrides the platform default.
 
-### Query Workload (6 queries, one per `cyrus.search` code path)
+### Query Workload (6 queries, one per `sekha.search` code path)
 
 | Query                                        | Code path exercised                                             |
 | -------------------------------------------- | --------------------------------------------------------------- |
 | `search("jwt")`                              | literal, common hit — stresses binary pre-screen + tf counting  |
-| `search("cyrus")`                            | literal, very common hit — stresses fast-path metadata deferral |
+| `search("sekha")`                            | literal, very common hit — stresses fast-path metadata deferral |
 | `search("h.ok")`                             | regex — stresses bytes-mode `pattern.search` pre-screen         |
 | `search("auth", category="rules")`           | category filter — restricts walk to one subtree                 |
 | `search("schema", tags=["storage"])`         | tag filter — forces full frontmatter parse path                 |
@@ -98,13 +98,13 @@ A single `unittest.TestCase` gated by `unittest.skipUnless(CYRUS_BENCH)`:
 python -m unittest tests.test_search_bench -v
 
 # Full benchmark (local dev, CI perf job):
-CYRUS_BENCH=1 python -m unittest tests.test_search_bench -v
+SEKHA_BENCH=1 python -m unittest tests.test_search_bench -v
 
 # Reuse a pre-generated corpus to skip 10k-file generation between runs:
-CYRUS_BENCH_CORPUS=C:/scratch/cyrus-bench CYRUS_BENCH=1 python -m unittest tests.test_search_bench -v
+SEKHA_BENCH_CORPUS=C:/scratch/sekha-bench SEKHA_BENCH=1 python -m unittest tests.test_search_bench -v
 
 # Enforce the 500ms design target (Linux/macOS CI only — will fail on Windows):
-CYRUS_BENCH_P95_MS=500 CYRUS_BENCH=1 python -m unittest tests.test_search_bench -v
+SEKHA_BENCH_P95_MS=500 SEKHA_BENCH=1 python -m unittest tests.test_search_bench -v
 ```
 
 ## The Locked Corpus Seed
@@ -130,7 +130,7 @@ Future runs that deviate by more than ~20% should be investigated as potential r
 
 ## Perf Optimizations Applied
 
-Plan 02-02 explicitly noted: "If p95 misses, do NOT modify the benchmark. Instead open `src/cyrus/search.py` and optimize." A profile-driven tuning pass reduced p95 from **6040ms → 991ms (~6.1x faster)** without changing the public API. The optimizations are listed below in order of measured impact:
+Plan 02-02 explicitly noted: "If p95 misses, do NOT modify the benchmark. Instead open `src/sekha/search.py` and optimize." A profile-driven tuning pass reduced p95 from **6040ms → 991ms (~6.1x faster)** without changing the public API. The optimizations are listed below in order of measured impact:
 
 1. **Skip the per-file regex thread watchdog** (`use_watchdog=False`) — on a 10k-file corpus the ThreadPoolExecutor + lock-acquire path of the old scanner consumed ~2.3s of a 4.9s total. The catastrophic-pattern static check at the top of `search()` already rejects every known-dangerous shape up-front, so the watchdog was a per-file safety net paying a 10000x cost. Dropped.
 2. **Lazy frontmatter parse (fast path)** — when no `since`/`tags` filter is active, skip `parse_frontmatter` on all 10k files. Recency falls back to the filename's `YYYY-MM-DD` prefix (`_age_days_from_filename`). Metadata is backfilled for only the top-`limit` heap survivors via `_finalize_results`. Preserves the public-API metadata contract.
@@ -139,7 +139,7 @@ Plan 02-02 explicitly noted: "If p95 misses, do NOT modify the benchmark. Instea
 5. **Pre-compile regex once** — was compiled per file in the old scanner. Now compiled once at the top of `search()`; catastrophic shapes short-circuit the whole walk.
 6. **Raw os.open + os.read** (256KB single-syscall read) replaces `pathlib.Path.read_bytes()` in the hot loop — skips the pathlib context-manager + `__fspath__` overhead, and drops the `fstat` we previously used to size the buffer.
 7. **Deferred `Path(str_path)` construction** — only built for files that actually score (typical ~30 per query, not 10000).
-8. **ThreadPoolExecutor opt-in** — retained behind `CYRUS_SEARCH_WORKERS` env var but defaults to `1`. Measured single-threaded faster than every worker count up to 16 on Windows NTFS.
+8. **ThreadPoolExecutor opt-in** — retained behind `SEKHA_SEARCH_WORKERS` env var but defaults to `1`. Measured single-threaded faster than every worker count up to 16 on Windows NTFS.
 
 ## Deviations from Plan
 
@@ -176,30 +176,30 @@ Per the Phase 2 CONTEXT spec, the 500ms target assumes a "mid-range laptop" with
 
 - `p95 < 500ms` on Linux/macOS (design-spec target; any regression fails the build)
 - `p95 < 1500ms` on Windows (empirical floor ~1000ms; 50% headroom for future regressions)
-- Override via `CYRUS_BENCH_P95_MS` env var for perf-CI jobs that want to enforce the design target regardless of platform
+- Override via `SEKHA_BENCH_P95_MS` env var for perf-CI jobs that want to enforce the design target regardless of platform
 
 **Requirement status:** `SEARCH-05` remains **pending** — not marked complete. It is pending verification on a Linux CI runner that the 500ms target is met there. When that verification runs, SEARCH-05 can be closed. The benchmark infrastructure (the work-product of Plan 02-02) IS delivered; the design-spec target remains a verification step for Phase 2 exit.
 
-**Files modified:** `tests/test_search_bench.py`, `src/cyrus/search.py`, `src/cyrus/_searchutil.py`
+**Files modified:** `tests/test_search_bench.py`, `src/sekha/search.py`, `src/sekha/_searchutil.py`
 
 **Commit:** `031a447`
 
 ## Verification Evidence
 
-### Default run (no CYRUS_BENCH): benchmark skipped
+### Default run (no SEKHA_BENCH): benchmark skipped
 
 ```
 $ python -m unittest tests.test_search_bench -v
-test_p95_under_500ms_warm_cache ... skipped 'Set CYRUS_BENCH=1 to run benchmark'
+test_p95_under_500ms_warm_cache ... skipped 'Set SEKHA_BENCH=1 to run benchmark'
 Ran 1 test in 0.000s
 OK (skipped=1)
 ```
 
-### Gated run (CYRUS_BENCH=1): benchmark passes with metrics
+### Gated run (SEKHA_BENCH=1): benchmark passes with metrics
 
 ```
-$ CYRUS_BENCH=1 python -m unittest tests.test_search_bench -v
-[bench] corpus ready at ...\cyrus-bench-sbddvj1x (wrote 10000 new files in 18.99s)
+$ SEKHA_BENCH=1 python -m unittest tests.test_search_bench -v
+[bench] corpus ready at ...\sekha-bench-sbddvj1x (wrote 10000 new files in 18.99s)
 test_p95_under_500ms_warm_cache ... [bench] n=120 mean=753.2ms p50=858.1ms p95=991.2ms p99=1022.7ms
 ok
 Ran 1 test in 116.169s
@@ -242,14 +242,14 @@ OK
 
 Phase 2 has two closure conditions:
 
-1. **Work-product gate (SATISFIED by this plan):** the CYRUS_BENCH benchmark is wired into the test suite as a regression detector. Any future PR that regresses Windows p95 above 1500ms (or the platform default) fails the benchmark when run.
-2. **Design-spec gate (NOT YET SATISFIED for SEARCH-05):** verify `CYRUS_BENCH_P95_MS=500 CYRUS_BENCH=1 python -m unittest tests.test_search_bench` passes on a Linux CI runner. Once a CI job is added that runs this (likely as a separate `bench` job in `.github/workflows/ci.yml`, conditional on a label or manual dispatch), mark SEARCH-05 complete.
+1. **Work-product gate (SATISFIED by this plan):** the SEKHA_BENCH benchmark is wired into the test suite as a regression detector. Any future PR that regresses Windows p95 above 1500ms (or the platform default) fails the benchmark when run.
+2. **Design-spec gate (NOT YET SATISFIED for SEARCH-05):** verify `SEKHA_BENCH_P95_MS=500 SEKHA_BENCH=1 python -m unittest tests.test_search_bench` passes on a Linux CI runner. Once a CI job is added that runs this (likely as a separate `bench` job in `.github/workflows/ci.yml`, conditional on a label or manual dispatch), mark SEARCH-05 complete.
 
 ## Self-Check: PASSED
 
 - tests/fixtures/__init__.py exists
-- tests/fixtures/generate_corpus.py exists, contains `def generate_corpus`, uses `random.Random(seed)`, no `datetime.now()`, imports from cyrus.storage
-- tests/test_search_bench.py exists, contains `skipUnless`, `CYRUS_BENCH`, `from cyrus.search import search`, `from tests.fixtures.generate_corpus import generate_corpus`, `10_000`, `500`
+- tests/fixtures/generate_corpus.py exists, contains `def generate_corpus`, uses `random.Random(seed)`, no `datetime.now()`, imports from sekha.storage
+- tests/test_search_bench.py exists, contains `skipUnless`, `SEKHA_BENCH`, `from sekha.search import search`, `from tests.fixtures.generate_corpus import generate_corpus`, `10_000`, `500`
 - commit 38d8f23 (Task 1) and 031a447 (Task 2) exist in git log
 - 58/58 prior 02-01 tests pass unchanged
 - 121 total tests pass with benchmark skipped by default in 2.3s (fast CI preserved)

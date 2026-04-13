@@ -1,4 +1,4 @@
-"""Cyrus rules engine — pure-logic matcher for tool-scoped rules.
+"""Sekha rules engine — pure-logic matcher for tool-scoped rules.
 
 Public surface:
 - Rule: frozen dataclass representing a compiled rule
@@ -24,7 +24,7 @@ parsed rule list per directory (not per hook_event/tool filter) so changing
 the filter arguments reuses the same parse. clear_cache() drops everything
 and forces a re-parse on the next load.
 
-Pause (RULES-08): CYRUS_PAUSE is a comma-separated list of rule names to
+Pause (RULES-08): SEKHA_PAUSE is a comma-separated list of rule names to
 suppress. Read every load_rules call so tests can flip it per-test.
 
 Strict parsing (RULES-02): invalid frontmatter / unknown severity / broken
@@ -39,7 +39,7 @@ offending filename and the reason both appear in the log.
 #   RULES-05: block > warn, priority, first-match tie + log — evaluate
 #   RULES-06: Compile cache keyed on dir mtime + count — _CACHE + _dir_cache_key
 #   RULES-07: test_rule() dry-run — public function
-#   RULES-08: CYRUS_PAUSE env var override — _paused_names
+#   RULES-08: SEKHA_PAUSE env var override — _paused_names
 from __future__ import annotations
 
 import os
@@ -48,14 +48,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from cyrus._rulesutil import (
-    _compile_rule_pattern,  # noqa: F401 — re-exported for Phase 5 cyrus_add_rule validation
+from sekha._rulesutil import (
+    _compile_rule_pattern,  # noqa: F401 — re-exported for Phase 5 sekha_add_rule validation
     _dir_cache_key,
     _flatten_tool_input,
     _parse_rule_file,
 )
-from cyrus.logutil import get_logger
-from cyrus.paths import category_dir
+from sekha.logutil import get_logger
+from sekha.paths import category_dir
 
 _log = get_logger(__name__)
 
@@ -67,7 +67,7 @@ __all__ = (
     "clear_cache",
 )
 
-_PAUSE_ENV = "CYRUS_PAUSE"
+_PAUSE_ENV = "SEKHA_PAUSE"
 
 # Cache: resolved-dir-str → (dir_cache_key, parsed_rule_list).
 # The parsed list is the FULL result of walking the dir — filtering by
@@ -78,7 +78,7 @@ _CACHE: dict[str, tuple[tuple[int, float], list["Rule"]]] = {}
 
 @dataclass(frozen=True)
 class Rule:
-    """Compiled rule loaded from a ~/.cyrus/rules/<name>.md markdown file.
+    """Compiled rule loaded from a ~/.sekha/rules/<name>.md markdown file.
 
     Frozen + hashable: `triggers` and `matches` are tuples (not lists) so the
     dataclass can live in sets / be used as a dict key. `pattern` is an
@@ -104,7 +104,7 @@ def clear_cache() -> None:
 
 
 def _paused_names() -> set[str]:
-    """Parse CYRUS_PAUSE env var into a set of rule names to suppress.
+    """Parse SEKHA_PAUSE env var into a set of rule names to suppress.
 
     Read every call (no caching) so tests can flip the env mid-process. CSV
     format; whitespace around each name is stripped; empty entries skipped.
@@ -117,7 +117,7 @@ def _load_all(rules_dir: Path) -> list[Rule]:
     """Parse every *.md file under `rules_dir`, cache-aware.
 
     Invalid rules (missing field, bad severity, broken regex, read error) are
-    logged to stderr via cyrus.logutil and SKIPPED — never silenced. Other
+    logged to stderr via sekha.logutil and SKIPPED — never silenced. Other
     rules in the same directory continue to load.
     """
     rules_dir = Path(rules_dir).resolve()
@@ -152,7 +152,7 @@ def load_rules(
     """Return rules scoped to (hook_event, tool_name), pause-aware.
 
     The filter runs after the (cached) full parse so changing hook_event /
-    tool_name between calls does not re-read disk. CYRUS_PAUSE is re-read
+    tool_name between calls does not re-read disk. SEKHA_PAUSE is re-read
     on every call.
 
     Returns a list sorted by filename (same order as `_load_all`). Empty if
@@ -202,7 +202,7 @@ def evaluate(rules: list[Rule], tool_input: dict[str, Any]) -> Rule | None:
     if len(tied) > 1:
         others = [r.name for r in tied if r.name != winner.name]
         _log.warning(
-            "cyrus.rules: tie between %s and %s, using %s",
+            "sekha.rules: tie between %s and %s, using %s",
             winner.name,
             ", ".join(others),
             winner.name,
@@ -217,7 +217,7 @@ def test_rule(
 ) -> dict[str, Any]:
     """Dry-run a single rule by filename stem against `(tool_name, tool_input)`.
 
-    Reads ~/.cyrus/rules/<rule_name>.md directly (no cache — this is a
+    Reads ~/.sekha/rules/<rule_name>.md directly (no cache — this is a
     diagnostic aid, not the hot path). Returns a structured dict:
 
         {"matched": bool, "severity": str, "message": str, "rule": str}

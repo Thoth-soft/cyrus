@@ -8,10 +8,10 @@ Public surface:
     Render an ASCII table with `|` column separators and `+---+` divider
     rows. No Unicode box-drawing. Empty rows render just the header block.
 
-- merge_claude_settings(existing, cyrus_command="cyrus hook run")
+- merge_claude_settings(existing, sekha_command="sekha hook run")
         -> (merged_dict, changed_bool)
-    Idempotent merge of Cyrus's PreToolUse hook into ~/.claude/settings.json.
-    Scans every nested `hooks[*].command` for `cyrus_command`; if already
+    Idempotent merge of Sekha's PreToolUse hook into ~/.claude/settings.json.
+    Scans every nested `hooks[*].command` for `sekha_command`; if already
     present anywhere under hooks.PreToolUse[*].hooks[*], returns the input
     unchanged with changed=False. Otherwise appends a fresh matcher="*"
     block and returns the deep-copied result. Never mutates the input.
@@ -22,12 +22,12 @@ Public surface:
 
 - write_json_atomic(path, data) -> None
     json.dumps with indent=2 + sort_keys=True (stable diffs), wrapped in
-    cyrus.storage.atomic_write so partial writes can never corrupt a user's
+    sekha.storage.atomic_write so partial writes can never corrupt a user's
     settings.json.
 
 - say(message, stream=sys.stderr) -> None
     Print a status line to stderr (stdout is reserved for the single
-    user-facing directive in `cyrus init`). Appends newline + flushes.
+    user-facing directive in `sekha init`). Appends newline + flushes.
 
 Design notes:
 - `merge_claude_settings` walks arbitrary nested shapes because real
@@ -49,7 +49,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, TextIO
 
-from cyrus.storage import atomic_write
+from sekha.storage import atomic_write
 
 __all__ = (
     "format_table",
@@ -121,14 +121,14 @@ def _ascii_squash(s: str) -> str:
 # ----------------------------------------------------------------------
 def merge_claude_settings(
     existing: dict[str, Any],
-    cyrus_command: str = "cyrus hook run",
+    sekha_command: str = "sekha hook run",
 ) -> tuple[dict[str, Any], bool]:
-    """Idempotently merge the cyrus PreToolUse hook into a settings.json dict.
+    """Idempotently merge the sekha PreToolUse hook into a settings.json dict.
 
     Returns (merged, changed). Never mutates `existing`. Scans every
     `hooks.PreToolUse[*].hooks[*]` entry for a matching `command`; if found
     anywhere, returns a deep-copy + changed=False (idempotent). Otherwise
-    appends a fresh `{"matcher": "*", "hooks": [{"type":"command","command":cyrus_command}]}`
+    appends a fresh `{"matcher": "*", "hooks": [{"type":"command","command":sekha_command}]}`
     block to `hooks.PreToolUse` and returns (merged, True).
     """
     merged = copy.deepcopy(existing) if existing else {}
@@ -142,7 +142,7 @@ def merge_claude_settings(
     if not isinstance(pretool, list):
         pretool = []
 
-    # Scan for an existing cyrus entry anywhere under PreToolUse.
+    # Scan for an existing sekha entry anywhere under PreToolUse.
     for entry in pretool:
         if not isinstance(entry, dict):
             continue
@@ -150,7 +150,7 @@ def merge_claude_settings(
         if not isinstance(nested, list):
             continue
         for h in nested:
-            if isinstance(h, dict) and h.get("command") == cyrus_command:
+            if isinstance(h, dict) and h.get("command") == sekha_command:
                 # Already registered somewhere. Return the deep-copied input.
                 hooks_block["PreToolUse"] = pretool
                 return (merged, False)
@@ -159,7 +159,7 @@ def merge_claude_settings(
     pretool.append(
         {
             "matcher": "*",
-            "hooks": [{"type": "command", "command": cyrus_command}],
+            "hooks": [{"type": "command", "command": sekha_command}],
         }
     )
     hooks_block["PreToolUse"] = pretool
@@ -188,7 +188,7 @@ def backup_file(path: Path) -> Path | None:
 # Atomic JSON write
 # ----------------------------------------------------------------------
 def write_json_atomic(path: Path, data: Any) -> None:
-    """Write `data` as indented, sort-keyed JSON via cyrus.storage.atomic_write.
+    """Write `data` as indented, sort-keyed JSON via sekha.storage.atomic_write.
 
     Creates the parent directory as needed. Uses indent=2 + sort_keys=True
     so diffs between successive writes stay minimal and review-friendly.
@@ -205,7 +205,7 @@ def write_json_atomic(path: Path, data: Any) -> None:
 def say(message: str, stream: TextIO | None = None) -> None:
     """Write `message + '\\n'` to `stream` (default: sys.stderr) and flush.
 
-    Status output in `cyrus init`, `cyrus doctor`, etc. goes to stderr so
+    Status output in `sekha init`, `sekha doctor`, etc. goes to stderr so
     stdout stays reserved for single-purpose machine-readable output (the
     `claude mcp add` hint in init, the JSON blob in `doctor --json`).
     """

@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Build `cyrus.rules` as pure-logic library — no I/O orchestration, no hook integration. Given a directory of rule markdown files + a tool_name + tool_input, return the winning rule (if any) and its severity.
+Build `sekha.rules` as pure-logic library — no I/O orchestration, no hook integration. Given a directory of rule markdown files + a tool_name + tool_input, return the winning rule (if any) and its severity.
 
 The "brain" of the differentiator, shipped as a testable unit before any process wiring.
 
@@ -16,7 +16,7 @@ The "brain" of the differentiator, shipped as a testable unit before any process
 <decisions>
 ## Implementation Decisions
 
-### Module: `cyrus.rules`
+### Module: `sekha.rules`
 
 ```python
 @dataclass(frozen=True)
@@ -42,7 +42,7 @@ def evaluate(rules: list[Rule], tool_input: dict) -> Rule | None:
 
 ### Rule File Format
 
-`~/.cyrus/rules/<name>.md`:
+`~/.sekha/rules/<name>.md`:
 
 ```markdown
 ---
@@ -57,7 +57,7 @@ anchored: false
 Never run `rm -rf /` — catastrophic data loss.
 ```
 
-Frontmatter parsed via existing `cyrus.storage.parse_frontmatter()` (reuse).
+Frontmatter parsed via existing `sekha.storage.parse_frontmatter()` (reuse).
 Body (below `---`) is the `message`.
 
 ### Matching Semantics
@@ -95,18 +95,18 @@ Body (below `---`) is the `message`.
 
 ### Temporary Override
 
-- `CYRUS_PAUSE` env var: comma-separated rule names to ignore
-- Alternative: marker file `~/.cyrus/rules/.paused/<name>` (allows `cyrus pause <rule>` CLI to create)
+- `SEKHA_PAUSE` env var: comma-separated rule names to ignore
+- Alternative: marker file `~/.sekha/rules/.paused/<name>` (allows `sekha pause <rule>` CLI to create)
 - Ship env var in this phase; CLI `pause` command is Phase 6
 
 ### CLI Hook (Phase 6 preview)
 
-`cyrus rule test <rule-name> <tool> <input-json>` — dry-run evaluation. Exposed as function `test_rule(rule_name: str, tool: str, tool_input: dict) -> dict` in this phase, CLI wrapper in Phase 6.
+`sekha rule test <rule-name> <tool> <input-json>` — dry-run evaluation. Exposed as function `test_rule(rule_name: str, tool: str, tool_input: dict) -> dict` in this phase, CLI wrapper in Phase 6.
 
 ### Module Layout
 
 ```
-src/cyrus/
+src/sekha/
     rules.py          # Rule dataclass, load_rules, evaluate, test_rule
     _rulesutil.py     # private: frontmatter reader, pattern anchoring, flatten
 tests/
@@ -119,7 +119,7 @@ tests/
 
 - Whether `flatten(tool_input)` uses `json.dumps` or a custom flat-string builder (suggest `json.dumps(..., sort_keys=True)` — deterministic)
 - Whether to case-fold rule names (suggest preserve exactly as filename)
-- Exact stderr format for tie warning (suggest `cyrus.rules: tie between <name1> and <name2>, using <winner>`)
+- Exact stderr format for tie warning (suggest `sekha.rules: tie between <name1> and <name2>, using <winner>`)
 
 </decisions>
 
@@ -127,21 +127,21 @@ tests/
 ## Existing Code Insights
 
 ### Reusable Assets
-- `cyrus.storage.parse_frontmatter()` — frontmatter dict + body split
-- `cyrus.storage.CATEGORIES` — includes "rules"
-- `cyrus.paths.cyrus_home()` — for locating `~/.cyrus/rules/`
-- `cyrus.logutil.get_logger()` — stderr logging
+- `sekha.storage.parse_frontmatter()` — frontmatter dict + body split
+- `sekha.storage.CATEGORIES` — includes "rules"
+- `sekha.paths.sekha_home()` — for locating `~/.sekha/rules/`
+- `sekha.logutil.get_logger()` — stderr logging
 
 ### Established Patterns
 - Stdlib only
 - pathlib.Path
 - unittest
-- `CYRUS_HOME=tempfile.mkdtemp()` test isolation
+- `SEKHA_HOME=tempfile.mkdtemp()` test isolation
 - stderr-only logging
 
 ### Integration Points
-- Phase 4 hook imports `cyrus.rules.load_rules` and `evaluate`
-- Phase 5 MCP server's `cyrus_add_rule` tool writes rule files (using `cyrus.storage.save_memory` with category="rules" or direct write)
+- Phase 4 hook imports `sekha.rules.load_rules` and `evaluate`
+- Phase 5 MCP server's `sekha_add_rule` tool writes rule files (using `sekha.storage.save_memory` with category="rules" or direct write)
 
 </code_context>
 
@@ -157,7 +157,7 @@ tests/
 <deferred>
 ## Deferred Ideas
 
-- Rule conflict-resolution UI / `cyrus rules list --conflicts` — Phase 6
+- Rule conflict-resolution UI / `sekha rules list --conflicts` — Phase 6
 - Compiled-rules pickle cache persisted to disk — optimization for Phase 4 if hot-path profiling needs it
 - Rule templating / reusable rule fragments — v2
 

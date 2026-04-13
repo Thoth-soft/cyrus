@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "cyrus"
+name = "sekha"
 version = "0.1.0"
 description = "Zero-dependency AI memory system with hook-level rules enforcement for Claude Code"
 readme = "README.md"
@@ -26,12 +26,12 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Thoth-soft/cyrus"
-Repository = "https://github.com/Thoth-soft/cyrus"
-Issues = "https://github.com/Thoth-soft/cyrus/issues"
+Homepage = "https://github.com/Thoth-soft/sekha"
+Repository = "https://github.com/Thoth-soft/sekha"
+Issues = "https://github.com/Thoth-soft/sekha/issues"
 
 [project.scripts]
-cyrus = "cyrus.cli:main"
+sekha = "sekha.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/cyrus"]
+packages = ["src/sekha"]

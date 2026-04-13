@@ -1,10 +1,10 @@
-"""Tests for `cyrus doctor` (cyrus._doctor).
+"""Tests for `sekha doctor` (sekha._doctor).
 
-Plan 06-01 Task 3 -- RED stage. Module `cyrus._doctor` does not yet exist.
+Plan 06-01 Task 3 -- RED stage. Module `sekha._doctor` does not yet exist.
 
 Covers CLI-03 (7 diagnostic checks) + CLI-07 (ASCII-only output).
 
-The MCP canary check shells out to `cyrus serve` via subprocess. We patch
+The MCP canary check shells out to `sekha serve` via subprocess. We patch
 `_doctor._mcp_canary` to avoid spawning processes in unit tests -- Plan
 06-02's install-test job exercises the real subprocess path.
 """
@@ -22,8 +22,8 @@ from unittest import mock
 
 EXPECTED_CHECK_NAMES = {
     "python_version",
-    "cyrus_on_path",
-    "cyrus_home_writable",
+    "sekha_on_path",
+    "sekha_home_writable",
     "settings_hook_registered",
     "mcp_canary",
     "kill_switch",
@@ -32,25 +32,25 @@ EXPECTED_CHECK_NAMES = {
 
 
 class DoctorTestBase(unittest.TestCase):
-    """Isolate CYRUS_HOME and Path.home, patch mcp_canary to a happy stub."""
+    """Isolate SEKHA_HOME and Path.home, patch mcp_canary to a happy stub."""
 
     def setUp(self) -> None:
         self._td = tempfile.TemporaryDirectory()
         self.tmp = Path(self._td.name)
         self.fake_home = self.tmp / "home"
-        self.cyrus_dir = self.tmp / "cyrus"
+        self.sekha_dir = self.tmp / "sekha"
         self.fake_home.mkdir(parents=True, exist_ok=True)
-        self.cyrus_dir.mkdir(parents=True, exist_ok=True)
+        self.sekha_dir.mkdir(parents=True, exist_ok=True)
 
         self._env_patch = mock.patch.dict(
-            os.environ, {"CYRUS_HOME": str(self.cyrus_dir)}
+            os.environ, {"SEKHA_HOME": str(self.sekha_dir)}
         )
         self._home_patch = mock.patch(
             "pathlib.Path.home", return_value=self.fake_home
         )
         # Patch the canary by default so tests don't spawn subprocesses.
         self._canary_patch = mock.patch(
-            "cyrus._doctor._mcp_canary",
+            "sekha._doctor._mcp_canary",
             return_value=(True, "protocolVersion=2025-03-26"),
         )
         self._env_patch.start()
@@ -63,7 +63,7 @@ class DoctorTestBase(unittest.TestCase):
         self._env_patch.stop()
         self._td.cleanup()
 
-    def _write_settings_with_cyrus_hook(self) -> None:
+    def _write_settings_with_sekha_hook(self) -> None:
         settings = self.fake_home / ".claude" / "settings.json"
         settings.parent.mkdir(parents=True, exist_ok=True)
         settings.write_text(
@@ -73,7 +73,7 @@ class DoctorTestBase(unittest.TestCase):
                         {
                             "matcher": "*",
                             "hooks": [
-                                {"type": "command", "command": "cyrus hook run"}
+                                {"type": "command", "command": "sekha hook run"}
                             ],
                         }
                     ]
@@ -85,15 +85,15 @@ class DoctorTestBase(unittest.TestCase):
 
 class TestCollectChecks(DoctorTestBase):
     def test_returns_seven_check_results(self) -> None:
-        from cyrus._doctor import collect_checks
-        self._write_settings_with_cyrus_hook()
+        from sekha._doctor import collect_checks
+        self._write_settings_with_sekha_hook()
         results = collect_checks()
         self.assertEqual(len(results), 7)
         names = {r.name for r in results}
         self.assertEqual(names, EXPECTED_CHECK_NAMES)
 
     def test_result_has_name_ok_detail(self) -> None:
-        from cyrus._doctor import collect_checks
+        from sekha._doctor import collect_checks
         results = collect_checks()
         for r in results:
             self.assertIsInstance(r.name, str)
@@ -103,8 +103,8 @@ class TestCollectChecks(DoctorTestBase):
 
 class TestJsonMode(DoctorTestBase):
     def test_outputs_parseable_json_to_stdout(self) -> None:
-        from cyrus._doctor import run
-        self._write_settings_with_cyrus_hook()
+        from sekha._doctor import run
+        self._write_settings_with_sekha_hook()
         stdout = io.StringIO()
         stderr = io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -118,8 +118,8 @@ class TestJsonMode(DoctorTestBase):
 
 class TestTextMode(DoctorTestBase):
     def test_output_ascii_only(self) -> None:
-        from cyrus._doctor import run
-        self._write_settings_with_cyrus_hook()
+        from sekha._doctor import run
+        self._write_settings_with_sekha_hook()
         stdout = io.StringIO()
         stderr = io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -127,8 +127,8 @@ class TestTextMode(DoctorTestBase):
         stdout.getvalue().encode("ascii")  # must not raise
 
     def test_contains_ok_or_fail_prefix(self) -> None:
-        from cyrus._doctor import run
-        self._write_settings_with_cyrus_hook()
+        from sekha._doctor import run
+        self._write_settings_with_sekha_hook()
         stdout = io.StringIO()
         stderr = io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -139,13 +139,13 @@ class TestTextMode(DoctorTestBase):
 
 class TestExitCodes(DoctorTestBase):
     def test_exit_zero_when_all_pass(self) -> None:
-        from cyrus import _doctor as doctor
-        self._write_settings_with_cyrus_hook()
+        from sekha import _doctor as doctor
+        self._write_settings_with_sekha_hook()
         fake_results = [
             doctor.CheckResult(name=n, ok=True, detail="good")
             for n in sorted(EXPECTED_CHECK_NAMES)
         ]
-        with mock.patch("cyrus._doctor.collect_checks", return_value=fake_results):
+        with mock.patch("sekha._doctor.collect_checks", return_value=fake_results):
             stdout = io.StringIO()
             stderr = io.StringIO()
             with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -153,7 +153,7 @@ class TestExitCodes(DoctorTestBase):
             self.assertEqual(rc, 0)
 
     def test_exit_one_when_any_fails(self) -> None:
-        from cyrus import _doctor as doctor
+        from sekha import _doctor as doctor
         fake_results = [
             doctor.CheckResult(name=n, ok=True, detail="good")
             for n in sorted(EXPECTED_CHECK_NAMES)
@@ -161,7 +161,7 @@ class TestExitCodes(DoctorTestBase):
         fake_results[0] = doctor.CheckResult(
             name=fake_results[0].name, ok=False, detail="broken"
         )
-        with mock.patch("cyrus._doctor.collect_checks", return_value=fake_results):
+        with mock.patch("sekha._doctor.collect_checks", return_value=fake_results):
             stdout = io.StringIO()
             stderr = io.StringIO()
             with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -171,27 +171,27 @@ class TestExitCodes(DoctorTestBase):
 
 class TestKillSwitch(DoctorTestBase):
     def test_kill_switch_marker_trips_check(self) -> None:
-        from cyrus._hookutil import create_marker
-        from cyrus._doctor import collect_checks
-        self._write_settings_with_cyrus_hook()
+        from sekha._hookutil import create_marker
+        from sekha._doctor import collect_checks
+        self._write_settings_with_sekha_hook()
         create_marker()
         results = {r.name: r for r in collect_checks()}
         ks = results["kill_switch"]
         self.assertFalse(ks.ok)
-        self.assertIn("cyrus hook enable", ks.detail)
+        self.assertIn("sekha hook enable", ks.detail)
 
 
 class TestRecentHookErrors(DoctorTestBase):
     def test_tail_entries_reported(self) -> None:
-        from cyrus._doctor import collect_checks
-        log = self.cyrus_dir / "hook-errors.log"
+        from datetime import datetime, timezone, timedelta
+        from sekha._doctor import collect_checks
+        log = self.sekha_dir / "hook-errors.log"
         log.parent.mkdir(parents=True, exist_ok=True)
+        # Use recent timestamps (within 24h) so the check counts them.
+        now = datetime.now(timezone.utc)
         lines = [
-            "2026-04-12T10:00:00+00:00 ValueError: boom1",
-            "2026-04-12T10:05:00+00:00 ValueError: boom2",
-            "2026-04-12T10:10:00+00:00 ValueError: boom3",
-            "2026-04-12T10:15:00+00:00 ValueError: boom4",
-            "2026-04-12T10:20:00+00:00 ValueError: boom5",
+            f"{(now - timedelta(minutes=30 * i)).isoformat()} ValueError: boom{i+1}"
+            for i in range(5)
         ]
         log.write_text("\n".join(lines) + "\n", encoding="utf-8")
         results = {r.name: r for r in collect_checks()}
@@ -205,18 +205,18 @@ class TestRecentHookErrors(DoctorTestBase):
 
 class TestSettingsHookMissing(DoctorTestBase):
     def test_missing_settings_reports_fail(self) -> None:
-        from cyrus._doctor import collect_checks
+        from sekha._doctor import collect_checks
         # No settings.json written.
         results = {r.name: r for r in collect_checks()}
         shr = results["settings_hook_registered"]
         self.assertFalse(shr.ok)
-        self.assertIn("cyrus init", shr.detail)
+        self.assertIn("sekha init", shr.detail)
 
 
 class TestMcpCanaryPatched(DoctorTestBase):
     def test_canary_success_detail_contains_version(self) -> None:
-        from cyrus._doctor import collect_checks
-        self._write_settings_with_cyrus_hook()
+        from sekha._doctor import collect_checks
+        self._write_settings_with_sekha_hook()
         results = {r.name: r for r in collect_checks()}
         canary = results["mcp_canary"]
         self.assertTrue(canary.ok)
@@ -225,8 +225,8 @@ class TestMcpCanaryPatched(DoctorTestBase):
 
 class TestCliIntegration(DoctorTestBase):
     def test_cli_main_doctor_dispatches(self) -> None:
-        from cyrus.cli import main
-        self._write_settings_with_cyrus_hook()
+        from sekha.cli import main
+        self._write_settings_with_sekha_hook()
         stdout = io.StringIO()
         stderr = io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -236,8 +236,8 @@ class TestCliIntegration(DoctorTestBase):
         self.assertTrue("[OK]" in out or "[FAIL]" in out)
 
     def test_cli_main_doctor_json_dispatches(self) -> None:
-        from cyrus.cli import main
-        self._write_settings_with_cyrus_hook()
+        from sekha.cli import main
+        self._write_settings_with_sekha_hook()
         stdout = io.StringIO()
         stderr = io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):

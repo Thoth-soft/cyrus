@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Ship v0.1.0. Replace the README skeleton with a real one, write the threat model, publish example rules, update CHANGELOG, tag the GitHub release. After this phase, strangers can `pip install cyrus` and use it confidently.
+Ship v0.1.0. Replace the README skeleton with a real one, write the threat model, publish example rules, update CHANGELOG, tag the GitHub release. After this phase, strangers can `pip install sekha` and use it confidently.
 
 Note: actual PyPI publish is still blocked on user's PyPI token (Plan 00-02). Phase 7 preps everything for release and tags the GitHub release — PyPI upload is the final user-initiated step.
 
@@ -21,40 +21,40 @@ Note: actual PyPI publish is still blocked on user's PyPI token (Plan 00-02). Ph
 Replace the 13-line skeleton with a proper README:
 
 ```markdown
-# Cyrus
+# Sekha
 
 Zero-dependency AI memory system with hook-level rules enforcement for Claude Code.
 
-## Why Cyrus?
+## Why Sekha?
 
 Every AI memory system stores rules. None of them enforce them.
 
-Cyrus hooks into Claude Code's PreToolUse event to **actually block** tool calls that violate your rules — the AI cannot bypass this, even with `--dangerously-skip-permissions`.
+Sekha hooks into Claude Code's PreToolUse event to **actually block** tool calls that violate your rules — the AI cannot bypass this, even with `--dangerously-skip-permissions`.
 
 [30-second demo showing: write rule → claude tries to run rm -rf → blocked with message]
 
 ## Install
 
 ```bash
-pip install cyrus
-cyrus init
-claude mcp add cyrus -- cyrus serve
+pip install sekha
+sekha init
+claude mcp add sekha -- sekha serve
 ```
 
 ## Features
 
-- **Persistent memory** across sessions (conversations, decisions, preferences) stored as plain markdown files in `~/.cyrus/`
+- **Persistent memory** across sessions (conversations, decisions, preferences) stored as plain markdown files in `~/.sekha/`
 - **Rules enforcement** at the hook level — cannot be bypassed by the AI
 - **Zero dependencies** — pure Python stdlib
 - **Works with any MCP client** — Claude Code, Cursor, Cline, etc (hook enforcement is Claude Code only)
-- **6 MCP tools**: cyrus_save, cyrus_search, cyrus_list, cyrus_delete, cyrus_status, cyrus_add_rule
-- **CLI**: cyrus init, cyrus doctor, cyrus add-rule, cyrus list-rules, cyrus hook bench
+- **6 MCP tools**: sekha_save, sekha_search, sekha_list, sekha_delete, sekha_status, sekha_add_rule
+- **CLI**: sekha init, sekha doctor, sekha add-rule, sekha list-rules, sekha hook bench
 
 ## How It Works
 
-[Diagram: Claude Code → PreToolUse hook → cyrus hook run → rules engine → block or allow]
+[Diagram: Claude Code → PreToolUse hook → sekha hook run → rules engine → block or allow]
 
-Three processes, all sharing state via `~/.cyrus/`:
+Three processes, all sharing state via `~/.sekha/`:
 1. **MCP server** (long-lived, one per Claude Code session) — serves memory tools
 2. **Hook** (short-lived, per-tool-call) — enforces rules, blocks violations
 3. **CLI** (one-shot) — init, doctor, add-rule, etc
@@ -69,11 +69,11 @@ See `examples/rules/` for copy-paste rules like:
 
 ## Threat Model
 
-**Cyrus is a consistency enforcer, not a security sandbox.**
+**Sekha is a consistency enforcer, not a security sandbox.**
 
 The AI could bypass a rule by using a different tool — if you block `Bash` with pattern `rm -rf`, the AI could use the `Write` tool to create a deletion script. This is intentional.
 
-Cyrus exists to keep the AI honest about *intentions* you've made explicit, not to prevent a malicious AI from finding creative workarounds. For that, use OS-level sandboxing.
+Sekha exists to keep the AI honest about *intentions* you've made explicit, not to prevent a malicious AI from finding creative workarounds. For that, use OS-level sandboxing.
 
 ## Cross-Client Support
 
@@ -107,7 +107,7 @@ Create in Keep a Changelog format:
 ```markdown
 # Changelog
 
-All notable changes to Cyrus will be documented in this file.
+All notable changes to Sekha will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
@@ -116,7 +116,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **Memory system**: save/search/list/delete memories via MCP tools
-- **Rules engine**: load rules from `~/.cyrus/rules/`, match by tool_name + pattern
+- **Rules engine**: load rules from `~/.sekha/rules/`, match by tool_name + pattern
 - **PreToolUse hook**: enforce rules at the hook level (blocks violations)
 - **MCP server**: newline-delimited JSON-RPC over stdio, 6 tools
 - **CLI**: init, doctor, add-rule, list-rules, hook run/bench/enable/disable, serve

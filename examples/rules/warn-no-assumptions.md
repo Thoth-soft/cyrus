@@ -24,5 +24,5 @@ This rule fires on EVERY tool call (pattern '.*', matches '*'). It is a warn-sev
 rule, so it only injects a reminder via additionalContext - it never blocks.
 
 If it feels too noisy, bump priority down so a blocking rule can still win precedence.
-To disable for a single session: CYRUS_PAUSE=warn-no-assumptions in the environment.
+To disable for a single session: SEKHA_PAUSE=warn-no-assumptions in the environment.
 -->

@@ -1,11 +1,11 @@
-# Contributing to Cyrus
+# Contributing to Sekha
 
 ## Development Setup
 
 1. Clone the repository:
    ```
-   git clone https://github.com/Thoth-soft/cyrus.git
-   cd cyrus
+   git clone https://github.com/Thoth-soft/sekha.git
+   cd sekha
    ```
 
 2. Create a virtual environment:

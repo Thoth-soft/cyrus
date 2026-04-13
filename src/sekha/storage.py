@@ -1,6 +1,6 @@
-"""Cyrus storage primitives: atomic writes, filelock, frontmatter, save_memory.
+"""Sekha storage primitives: atomic writes, filelock, frontmatter, save_memory.
 
-Stdlib only. Consumed by every higher-level Cyrus module (search, rules, hook,
+Stdlib only. Consumed by every higher-level Sekha module (search, rules, hook,
 server). The entire correctness story for on-disk memory hinges on the three
 primitives here — atomic_write, filelock, and the hand-rolled YAML-subset
 frontmatter parser/dumper — so every change here demands the full test suite.
@@ -34,8 +34,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-from cyrus.logutil import get_logger
-from cyrus.paths import CATEGORIES, category_dir, cyrus_home  # noqa: F401 — cyrus_home re-used by downstream modules
+from sekha.logutil import get_logger
+from sekha.paths import CATEGORIES, category_dir, sekha_home  # noqa: F401 — sekha_home re-used by downstream modules
 
 _log = get_logger(__name__)
 
@@ -188,7 +188,7 @@ def make_memory_path(
     when: datetime | None = None,
     seed: bytes | None = None,
 ) -> Path:
-    """Build cyrus_home()/<category>/YYYY-MM-DD_<8hex>_<slug>.md.
+    """Build sekha_home()/<category>/YYYY-MM-DD_<8hex>_<slug>.md.
 
     The id is blake2b(seed or (title|iso-timestamp), digest_size=4).hexdigest(),
     yielding exactly 8 hex chars. Does NOT create the file or parent directory.
@@ -345,7 +345,7 @@ def save_memory(
     source: str | None = None,
     extra_metadata: dict[str, Any] | None = None,
 ) -> Path:
-    """Create a memory file under cyrus_home()/<category>/.
+    """Create a memory file under sekha_home()/<category>/.
 
     Composes make_memory_path + dump_frontmatter + filelock + atomic_write.
     Builds default frontmatter: id (from filename hash), category, created

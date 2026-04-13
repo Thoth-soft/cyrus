@@ -1,9 +1,9 @@
-"""Tests for `cyrus add-rule` (CLI-04).
+"""Tests for `sekha add-rule` (CLI-04).
 
 Plan 06-01 Task 4 -- RED stage. Subcommand is not yet registered on cli.py.
 
-Every test isolates CYRUS_HOME via a tempdir so rule file writes never
-touch the developer's real ~/.cyrus/rules/.
+Every test isolates SEKHA_HOME via a tempdir so rule file writes never
+touch the developer's real ~/.sekha/rules/.
 """
 from __future__ import annotations
 
@@ -20,10 +20,10 @@ class AddRuleTestBase(unittest.TestCase):
     def setUp(self) -> None:
         self._td = tempfile.TemporaryDirectory()
         self.tmp = Path(self._td.name)
-        self.cyrus_dir = self.tmp / "cyrus"
-        self.cyrus_dir.mkdir(parents=True, exist_ok=True)
+        self.sekha_dir = self.tmp / "sekha"
+        self.sekha_dir.mkdir(parents=True, exist_ok=True)
         self._env_patch = mock.patch.dict(
-            os.environ, {"CYRUS_HOME": str(self.cyrus_dir)}
+            os.environ, {"SEKHA_HOME": str(self.sekha_dir)}
         )
         self._env_patch.start()
 
@@ -32,8 +32,8 @@ class AddRuleTestBase(unittest.TestCase):
         self._td.cleanup()
 
     def _call(self, *args: str) -> tuple[int, str, str]:
-        """Invoke `cyrus.cli.main(['add-rule', *args])` with captured streams."""
-        from cyrus.cli import main
+        """Invoke `sekha.cli.main(['add-rule', *args])` with captured streams."""
+        from sekha.cli import main
         stdout = io.StringIO()
         stderr = io.StringIO()
         try:
@@ -45,7 +45,7 @@ class AddRuleTestBase(unittest.TestCase):
 
     @property
     def rules_dir(self) -> Path:
-        return self.cyrus_dir / "rules"
+        return self.sekha_dir / "rules"
 
 
 class TestValidRule(AddRuleTestBase):
@@ -74,7 +74,7 @@ class TestValidRule(AddRuleTestBase):
             "--pattern", "rm -rf",
             "--message", "nope",
         )
-        from cyrus._rulesutil import _parse_rule_file
+        from sekha._rulesutil import _parse_rule_file
         path = self.rules_dir / "demo2.md"
         rule = _parse_rule_file(path)
         self.assertEqual(rule.severity, "block")

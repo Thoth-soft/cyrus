@@ -1,4 +1,4 @@
-"""Tests for cyrus.rules public API: load_rules, evaluate, test_rule, clear_cache.
+"""Tests for sekha.rules public API: load_rules, evaluate, test_rule, clear_cache.
 
 Plan 03-01 Task 3 — RED stage. Task 2 delivered a Rule dataclass stub only;
 this module imports names (load_rules, evaluate, test_rule, clear_cache) that
@@ -17,13 +17,13 @@ Coverage map (RULES-01..08):
   invalidates; clear_cache forces re-parse.
 - RULES-07: TestDryRun — test_rule returns a structured dict; FileNotFoundError
   on missing rule name.
-- RULES-08: TestPause — CYRUS_PAUSE env var (single and CSV) suppresses rules.
+- RULES-08: TestPause — SEKHA_PAUSE env var (single and CSV) suppresses rules.
 
 Test isolation:
-- Every TestCase clears cyrus.rules._CACHE in setUp + save/restore CYRUS_PAUSE.
+- Every TestCase clears sekha.rules._CACHE in setUp + save/restore SEKHA_PAUSE.
 - Fixtures live in tests/fixtures/rules/ (committed alongside this file).
-- test_rule touches ~/.cyrus/rules/ via cyrus.paths.category_dir — we override
-  CYRUS_HOME to a tempdir for those tests and copy fixtures in.
+- test_rule touches ~/.sekha/rules/ via sekha.paths.category_dir — we override
+  SEKHA_HOME to a tempdir for those tests and copy fixtures in.
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ import time
 import unittest
 from pathlib import Path
 
-from cyrus.rules import (
+from sekha.rules import (
     Rule,
     clear_cache,
     evaluate,
@@ -46,17 +46,17 @@ FIXTURES = Path(__file__).parent / "fixtures" / "rules"
 
 
 class _RulesTestBase(unittest.TestCase):
-    """Mixin-ish base: clears cache + snapshots CYRUS_PAUSE per test."""
+    """Mixin-ish base: clears cache + snapshots SEKHA_PAUSE per test."""
 
     def setUp(self) -> None:
         clear_cache()
-        self._saved_pause = os.environ.pop("CYRUS_PAUSE", None)
+        self._saved_pause = os.environ.pop("SEKHA_PAUSE", None)
 
     def tearDown(self) -> None:
         if self._saved_pause is not None:
-            os.environ["CYRUS_PAUSE"] = self._saved_pause
+            os.environ["SEKHA_PAUSE"] = self._saved_pause
         else:
-            os.environ.pop("CYRUS_PAUSE", None)
+            os.environ.pop("SEKHA_PAUSE", None)
         clear_cache()
 
 
@@ -87,13 +87,13 @@ class TestLoading(_RulesTestBase):
         self.assertNotIn("invalid-bad-severity", names)
 
     def test_invalid_rules_logged_loudly_to_stderr(self):
-        # cyrus.logutil attaches a StreamHandler bound to sys.stderr at logger
+        # sekha.logutil attaches a StreamHandler bound to sys.stderr at logger
         # configure time — contextlib.redirect_stderr rebinds sys.stderr for
         # the caller but does not reach back through the handler reference.
         # assertLogs is the idiomatic capture for logger.error()/warning() in
         # unittest; it also happens to match the stderr delivery path because
         # the handler is the only path out and it's formatted the same.
-        with self.assertLogs("cyrus.rules", level="ERROR") as cm:
+        with self.assertLogs("sekha.rules", level="ERROR") as cm:
             load_rules(FIXTURES, "PreToolUse", "Bash")
         joined = "\n".join(cm.output)
         # Each of the three defective files must appear by name
@@ -201,8 +201,8 @@ class TestPrecedence(_RulesTestBase):
         a = self._make_rule("alpha-block", "block", priority=10)
         b = self._make_rule("beta-block", "block", priority=10)
         # assertLogs captures the logger's formatted output, which is what
-        # cyrus.logutil sends to stderr — same bytes, different capture path.
-        with self.assertLogs("cyrus.rules", level="WARNING") as cm:
+        # sekha.logutil sends to stderr — same bytes, different capture path.
+        with self.assertLogs("sekha.rules", level="WARNING") as cm:
             # Pass alpha first — load_rules returns filename-sorted so alpha wins
             winner = evaluate([a, b], {"command": "anything"})
         self.assertEqual(winner.name, "alpha-block")
@@ -230,7 +230,7 @@ class TestCache(_RulesTestBase):
 
     def test_second_call_hits_cache(self):
         # Snapshot the internal cache state by poking the module
-        import cyrus.rules as rules_mod
+        import sekha.rules as rules_mod
 
         clear_cache()
         self.assertEqual(len(rules_mod._CACHE), 0)
@@ -253,7 +253,7 @@ class TestCache(_RulesTestBase):
             self.assertEqual(len(first), 1)
             future = time.time() + 300.0
             os.utime(dst, (future, future))
-            import cyrus.rules as rules_mod
+            import sekha.rules as rules_mod
             first_list_id = id(list(rules_mod._CACHE.values())[0][1])
             second = load_rules(Path(td), "PreToolUse", "Bash")
             second_list_id = id(list(rules_mod._CACHE.values())[0][1])
@@ -262,7 +262,7 @@ class TestCache(_RulesTestBase):
             self.assertEqual(len(second), 1)
 
     def test_clear_cache_forces_reparse(self):
-        import cyrus.rules as rules_mod
+        import sekha.rules as rules_mod
         load_rules(FIXTURES, "PreToolUse", "Bash")
         self.assertGreaterEqual(len(rules_mod._CACHE), 1)
         clear_cache()
@@ -270,10 +270,10 @@ class TestCache(_RulesTestBase):
 
 
 class TestPause(_RulesTestBase):
-    """RULES-08: CYRUS_PAUSE env var suppresses named rules."""
+    """RULES-08: SEKHA_PAUSE env var suppresses named rules."""
 
     def test_single_rule_pause(self):
-        os.environ["CYRUS_PAUSE"] = "block-rm-rf"
+        os.environ["SEKHA_PAUSE"] = "block-rm-rf"
         rules = load_rules(FIXTURES, "PreToolUse", "Bash")
         names = {r.name for r in rules}
         self.assertNotIn("block-rm-rf", names)
@@ -281,25 +281,25 @@ class TestPause(_RulesTestBase):
         self.assertIn("block-sudo", names)
 
     def test_csv_pause(self):
-        os.environ["CYRUS_PAUSE"] = "block-rm-rf,warn-git-reset"
+        os.environ["SEKHA_PAUSE"] = "block-rm-rf,warn-git-reset"
         rules = load_rules(FIXTURES, "PreToolUse", "Bash")
         names = {r.name for r in rules}
         self.assertNotIn("block-rm-rf", names)
         self.assertNotIn("warn-git-reset", names)
 
     def test_pause_whitespace_tolerated(self):
-        os.environ["CYRUS_PAUSE"] = "  block-rm-rf , block-sudo  "
+        os.environ["SEKHA_PAUSE"] = "  block-rm-rf , block-sudo  "
         rules = load_rules(FIXTURES, "PreToolUse", "Bash")
         names = {r.name for r in rules}
         self.assertNotIn("block-rm-rf", names)
         self.assertNotIn("block-sudo", names)
 
     def test_unsetting_pause_restores_rules(self):
-        os.environ["CYRUS_PAUSE"] = "block-rm-rf"
+        os.environ["SEKHA_PAUSE"] = "block-rm-rf"
         rules_paused = load_rules(FIXTURES, "PreToolUse", "Bash")
         names_paused = {r.name for r in rules_paused}
         self.assertNotIn("block-rm-rf", names_paused)
-        os.environ.pop("CYRUS_PAUSE", None)
+        os.environ.pop("SEKHA_PAUSE", None)
         # _paused_names reads env every call → no clear_cache needed since the
         # pause filter is applied per-call post-cache.
         rules_live = load_rules(FIXTURES, "PreToolUse", "Bash")
@@ -312,9 +312,9 @@ class TestDryRun(_RulesTestBase):
 
     def setUp(self):
         super().setUp()
-        self._tmp = tempfile.mkdtemp(prefix="cyrus-rules-dryrun-")
-        self._saved_home = os.environ.get("CYRUS_HOME")
-        os.environ["CYRUS_HOME"] = self._tmp
+        self._tmp = tempfile.mkdtemp(prefix="sekha-rules-dryrun-")
+        self._saved_home = os.environ.get("SEKHA_HOME")
+        os.environ["SEKHA_HOME"] = self._tmp
         rules_dir = Path(self._tmp) / "rules"
         rules_dir.mkdir(parents=True, exist_ok=True)
         # Copy the block-rm-rf fixture so test_rule can find it by name
@@ -322,9 +322,9 @@ class TestDryRun(_RulesTestBase):
 
     def tearDown(self):
         if self._saved_home is not None:
-            os.environ["CYRUS_HOME"] = self._saved_home
+            os.environ["SEKHA_HOME"] = self._saved_home
         else:
-            os.environ.pop("CYRUS_HOME", None)
+            os.environ.pop("SEKHA_HOME", None)
         shutil.rmtree(self._tmp, ignore_errors=True)
         super().tearDown()
 

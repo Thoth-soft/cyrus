@@ -1,17 +1,17 @@
-"""Hook latency benchmark for Cyrus.
+"""Hook latency benchmark for Sekha.
 
-Gated by CYRUS_BENCH env var so fast CI stays fast. To run:
-    CYRUS_BENCH=1 python -m unittest tests.test_hook_bench -v
+Gated by SEKHA_BENCH env var so fast CI stays fast. To run:
+    SEKHA_BENCH=1 python -m unittest tests.test_hook_bench -v
 
 Asserts p50 <= 50ms and p95 <= 150ms across 100 real-subprocess runs of
-`python -m cyrus.cli hook run`. Covers HOOK-08.
+`python -m sekha.cli hook run`. Covers HOOK-08.
 
 Platform-aware default p95: looser on Windows where Python cold-start
-alone is 100-250ms. Override via CYRUS_HOOK_P95_MS for tighter CI
+alone is 100-250ms. Override via SEKHA_HOOK_P95_MS for tighter CI
 enforcement on a Linux runner. Mirrors the Phase 2 search bench pattern
 (see tests/test_search_bench.py for the precedent).
 
-The bench intentionally subprocesses `-m cyrus.cli` rather than timing
+The bench intentionally subprocesses `-m sekha.cli` rather than timing
 in-process: in-process would hide exactly the Python interpreter launch
 cost Claude Code pays on every tool invocation.
 """
@@ -28,7 +28,7 @@ import time
 import unittest
 from pathlib import Path
 
-_BENCH_ENABLED = bool(os.environ.get("CYRUS_BENCH"))
+_BENCH_ENABLED = bool(os.environ.get("SEKHA_BENCH"))
 _RUNS = 100
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _FIXTURES_RULES = _REPO_ROOT / "tests" / "fixtures" / "bench_rules"
@@ -37,16 +37,16 @@ _FIXTURES_EVENT = _REPO_ROOT / "tests" / "fixtures" / "hook_events" / "bash_rm_r
 # Default budgets per HOOK-08. Override for per-platform relaxation or
 # tighter CI enforcement. Win32 gets a looser p95 because Python cold
 # start alone is 100-250ms on Windows — same precedent as Phase 2 search.
-_P50_BUDGET_MS = float(os.environ.get("CYRUS_HOOK_P50_MS", "50"))
+_P50_BUDGET_MS = float(os.environ.get("SEKHA_HOOK_P50_MS", "50"))
 _P95_BUDGET_MS = float(
     os.environ.get(
-        "CYRUS_HOOK_P95_MS",
+        "SEKHA_HOOK_P95_MS",
         "300" if sys.platform == "win32" else "150",
     )
 )
 
 
-@unittest.skipUnless(_BENCH_ENABLED, "Set CYRUS_BENCH=1 to run benchmark")
+@unittest.skipUnless(_BENCH_ENABLED, "Set SEKHA_BENCH=1 to run benchmark")
 class HookLatencyBenchmark(unittest.TestCase):
     def test_p50_and_p95_within_budget(self):
         self.assertTrue(_FIXTURES_RULES.exists(), f"missing {_FIXTURES_RULES}")
@@ -60,12 +60,12 @@ class HookLatencyBenchmark(unittest.TestCase):
             rules_dir.mkdir()
             for f in _FIXTURES_RULES.glob("*.md"):
                 shutil.copy(f, rules_dir / f.name)
-            env = {**os.environ, "CYRUS_HOME": str(tmp_home)}
+            env = {**os.environ, "SEKHA_HOME": str(tmp_home)}
 
             # Warm-up — excluded from the sample so first-run FS cache
             # miss doesn't contaminate p50.
             subprocess.run(
-                [sys.executable, "-m", "cyrus.cli", "hook", "run"],
+                [sys.executable, "-m", "sekha.cli", "hook", "run"],
                 input=event_bytes,
                 env=env,
                 capture_output=True,
@@ -76,7 +76,7 @@ class HookLatencyBenchmark(unittest.TestCase):
             for _ in range(_RUNS):
                 t0 = time.perf_counter()
                 subprocess.run(
-                    [sys.executable, "-m", "cyrus.cli", "hook", "run"],
+                    [sys.executable, "-m", "sekha.cli", "hook", "run"],
                     input=event_bytes,
                     env=env,
                     capture_output=True,

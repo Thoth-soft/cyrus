@@ -7,9 +7,9 @@ Strategy: fresh repo
 
 | Repo | Source | Branch | Strategy |
 |------|--------|--------|----------|
-| cyrus | (new) | main | fresh init |
+| sekha | (new) | main | fresh init |
 
 ## Notes
 
-Building Cyrus — a simple, zero-dependency AI memory system.
+Building Sekha — a simple, zero-dependency AI memory system.
 Plain markdown files, MCP server, auto-save hook. The anti-MemPalace.
