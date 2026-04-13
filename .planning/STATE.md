@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1.0
 milestone_name: "**Goal**: Ship v0.1.0. Replace the README skeleton from Phase 0 with a real one, document the threat model honestly"
 status: verifying
-stopped_at: Completed 05-02-PLAN.md (MCP server + cyrus serve CLI + 8 subprocess integration tests); 282 tests pass; 9-cell CI green; Phase 5 ready for verification
-last_updated: "2026-04-13T01:16:44.924Z"
+stopped_at: Completed 06-01-PLAN.md (cyrus init/doctor/add-rule/list-rules, 337 tests, CI green, pushed to main)
+last_updated: "2026-04-13T01:39:10.296Z"
 last_activity: 2026-04-13
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 13
+  completed_plans: 12
   percent: 12
 ---
 
@@ -60,6 +60,7 @@ Progress: [█░░░░░░░░░] 12%
 | Phase 04-pretool-hook P02 | 4min | 3 tasks | 6 files |
 | Phase 05-mcp-server P01 | 6 min | 3 tasks | 6 files |
 | Phase 05-mcp-server P02 | 25min | 2 tasks | 3 files |
+| Phase 06-cli-install P01 | 25min | 4 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,10 @@ Recent decisions affecting current work:
 - [Phase 05-mcp-server]: Unknown protocolVersion falls back to _PREFERRED_VERSION=2025-03-26; handshake never errors on version mismatch
 - [Phase 05-mcp-server]: Unknown tool name -> JSON-RPC METHOD_NOT_FOUND; handler exception -> MCP isError; handler TypeError -> INVALID_PARAMS
 - [Phase 05-mcp-server]: Subprocess tests use bufsize=0 + text=False to exercise real Windows msvcrt binary-mode fd path
+- [Phase 06-cli-install]: Each CLI subcommand split into cyrus._<name> module; cli.py stays a lazy-import argparse router
+- [Phase 06-cli-install]: merge_claude_settings deep-copies on entry; scans every nested hooks[*].command for idempotency; never mutates input
+- [Phase 06-cli-install]: cyrus doctor recent_hook_errors is informational (ok=True); kill_switch is the authoritative failure signal
+- [Phase 06-cli-install]: add-rule validates regex via _compile_rule_pattern BEFORE any filesystem write; bad pattern leaves zero side effects
 
 ### Pending Todos
 
@@ -117,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-13T01:16:44.919Z
-Stopped at: Completed 05-02-PLAN.md (MCP server + cyrus serve CLI + 8 subprocess integration tests); 282 tests pass; 9-cell CI green; Phase 5 ready for verification
+Last session: 2026-04-13T01:39:00.024Z
+Stopped at: Completed 06-01-PLAN.md (cyrus init/doctor/add-rule/list-rules, 337 tests, CI green, pushed to main)
 Resume file: None

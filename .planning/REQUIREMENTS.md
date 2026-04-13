@@ -76,13 +76,13 @@
 
 ### CLI & Install Experience (CLI)
 
-- [ ] **CLI-01**: `cyrus init` — creates `~/.cyrus/` tree, writes default `config.json`, backs up + merges hook config into `~/.claude/settings.json`, prints the `claude mcp add cyrus` command for the user.
-- [ ] **CLI-02**: `cyrus init` is idempotent: running it twice doesn't duplicate settings.json entries or overwrite existing data.
-- [ ] **CLI-03**: `cyrus doctor` — validates install: Python version OK, package on PATH, hook registered in settings.json, ~/.cyrus/ writable, recent hook errors surfaced, MCP server tested with a canary `initialize` call.
-- [ ] **CLI-04**: `cyrus add-rule` — interactive wizard that prompts for name, severity, tool scope, pattern, message, then validates and writes the rule file.
-- [ ] **CLI-05**: `cyrus list-rules` — shows all rules with name, severity, tool scope, and last-modified time. Flags broken rules.
+- [x] **CLI-01**: `cyrus init` — creates `~/.cyrus/` tree, writes default `config.json`, backs up + merges hook config into `~/.claude/settings.json`, prints the `claude mcp add cyrus` command for the user.
+- [x] **CLI-02**: `cyrus init` is idempotent: running it twice doesn't duplicate settings.json entries or overwrite existing data.
+- [x] **CLI-03**: `cyrus doctor` — validates install: Python version OK, package on PATH, hook registered in settings.json, ~/.cyrus/ writable, recent hook errors surfaced, MCP server tested with a canary `initialize` call.
+- [x] **CLI-04**: `cyrus add-rule` — interactive wizard that prompts for name, severity, tool scope, pattern, message, then validates and writes the rule file.
+- [x] **CLI-05**: `cyrus list-rules` — shows all rules with name, severity, tool scope, and last-modified time. Flags broken rules.
 - [ ] **CLI-06**: `cyrus hook bench` — runs the hook 100 times with realistic rules and prints p50/p95/p99 latency. Exit code non-zero if p50 > 50ms or p95 > 150ms.
-- [ ] **CLI-07**: All CLI output is ASCII-only (no emoji). Windows cp1252 safe. Tested on fresh Windows VM.
+- [x] **CLI-07**: All CLI output is ASCII-only (no emoji). Windows cp1252 safe. Tested on fresh Windows VM.
 - [ ] **CLI-08**: Fresh-VM install test: on vanilla Windows, macOS, and Linux VMs, `pip install <name> && cyrus init && claude mcp add cyrus` succeeds end-to-end with no manual fixups. Part of release checklist.
 
 ### Documentation & Release (DOCS)
@@ -178,13 +178,13 @@
 | MCP-10 | Phase 5 | Complete |
 | MCP-11 | Phase 5 | Complete |
 | MCP-12 | Phase 5 | Complete |
-| CLI-01 | Phase 6 | Pending |
-| CLI-02 | Phase 6 | Pending |
-| CLI-03 | Phase 6 | Pending |
-| CLI-04 | Phase 6 | Pending |
-| CLI-05 | Phase 6 | Pending |
+| CLI-01 | Phase 6 | Complete |
+| CLI-02 | Phase 6 | Complete |
+| CLI-03 | Phase 6 | Complete |
+| CLI-04 | Phase 6 | Complete |
+| CLI-05 | Phase 6 | Complete |
 | CLI-06 | Phase 6 | Pending |
-| CLI-07 | Phase 6 | Pending |
+| CLI-07 | Phase 6 | Complete |
 | CLI-08 | Phase 6 | Pending |
 | DOCS-01 | Phase 7 | Pending |
 | DOCS-02 | Phase 7 | Pending |

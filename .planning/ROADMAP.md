@@ -123,7 +123,7 @@ Plans:
   4. **HARD RELEASE GATE**: Fresh-VM install test passes on vanilla Windows, macOS, and Linux VMs — `pip install <name> && cyrus init && claude mcp add cyrus` succeeds end-to-end with no manual fixups, and all CLI output is ASCII-only (no emoji, cp1252-safe). The phase does not close without this.
 **Plans**: 2 plans
 Plans:
-- [ ] 06-01-PLAN.md -- CLI commands: init, doctor, add-rule, list-rules (CLI-01..05, 07). CLI-06 already shipped in Phase 4 / 04-02.
+- [x] 06-01-PLAN.md -- CLI commands: init, doctor, add-rule, list-rules (CLI-01..05, 07). CLI-06 already shipped in Phase 4 / 04-02.
 - [ ] 06-02-PLAN.md -- Fresh-VM install-test CI job on ubuntu/macos/windows (CLI-08 HARD RELEASE GATE)
 **UI hint**: no
 
