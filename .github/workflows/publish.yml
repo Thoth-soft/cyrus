@@ -1,0 +1,72 @@
+name: Publish to PyPI
+
+# Runs after CI succeeds on main. Uploads to PyPI only when
+# pyproject.toml version differs from the latest on PyPI.
+# Auth: OIDC Trusted Publisher (no secret).
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  publish:
+    # Only on success, only on main, only on the canonical repo
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.repository == 'Thoth-soft/sekha'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/sekha/
+    permissions:
+      id-token: write  # REQUIRED for OIDC
+      contents: read
+    steps:
+      - name: Checkout the commit CI ran on
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Read versions (local and PyPI)
+        id: versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCAL=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "local=$LOCAL" >> "$GITHUB_OUTPUT"
+          PYPI=$(curl -sfL https://pypi.org/pypi/sekha/json | python -c "import sys,json; print(json.load(sys.stdin)['info']['version'])" 2>/dev/null || echo "none")
+          echo "pypi=$PYPI" >> "$GITHUB_OUTPUT"
+          echo "Local pyproject.toml version: $LOCAL"
+          echo "Latest on PyPI:                $PYPI"
+          if [ "$LOCAL" = "$PYPI" ]; then
+            echo "match=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "match=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip — version unchanged
+        if: steps.versions.outputs.match == 'true'
+        run: echo "pyproject.toml version ${{ steps.versions.outputs.local }} matches PyPI. Nothing to publish."
+
+      - name: Install build
+        if: steps.versions.outputs.match == 'false'
+        run: python -m pip install --upgrade build
+
+      - name: Build sdist + wheel
+        if: steps.versions.outputs.match == 'false'
+        run: python -m build
+
+      - name: Publish to PyPI (OIDC Trusted Publisher)
+        if: steps.versions.outputs.match == 'false'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # No `with: password:` — OIDC is resolved automatically
+        # because `id-token: write` is granted above and PyPI has
+        # Thoth-soft/sekha registered as a Trusted Publisher.
