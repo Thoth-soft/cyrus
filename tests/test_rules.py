@@ -27,8 +27,6 @@ Test isolation:
 """
 from __future__ import annotations
 
-import contextlib
-import io
 import os
 import shutil
 import tempfile
@@ -89,14 +87,19 @@ class TestLoading(_RulesTestBase):
         self.assertNotIn("invalid-bad-severity", names)
 
     def test_invalid_rules_logged_loudly_to_stderr(self):
-        buf = io.StringIO()
-        with contextlib.redirect_stderr(buf):
+        # cyrus.logutil attaches a StreamHandler bound to sys.stderr at logger
+        # configure time — contextlib.redirect_stderr rebinds sys.stderr for
+        # the caller but does not reach back through the handler reference.
+        # assertLogs is the idiomatic capture for logger.error()/warning() in
+        # unittest; it also happens to match the stderr delivery path because
+        # the handler is the only path out and it's formatted the same.
+        with self.assertLogs("cyrus.rules", level="ERROR") as cm:
             load_rules(FIXTURES, "PreToolUse", "Bash")
-        stderr = buf.getvalue()
+        joined = "\n".join(cm.output)
         # Each of the three defective files must appear by name
-        self.assertIn("invalid-missing-severity", stderr)
-        self.assertIn("invalid-bad-regex", stderr)
-        self.assertIn("invalid-bad-severity", stderr)
+        self.assertIn("invalid-missing-severity", joined)
+        self.assertIn("invalid-bad-regex", joined)
+        self.assertIn("invalid-bad-severity", joined)
 
     def test_no_matching_trigger_returns_empty(self):
         rules = load_rules(FIXTURES, "PostToolUse", "Bash")
@@ -197,15 +200,16 @@ class TestPrecedence(_RulesTestBase):
     def test_tie_breaks_by_first_in_list_and_logs_both_names(self):
         a = self._make_rule("alpha-block", "block", priority=10)
         b = self._make_rule("beta-block", "block", priority=10)
-        buf = io.StringIO()
-        with contextlib.redirect_stderr(buf):
+        # assertLogs captures the logger's formatted output, which is what
+        # cyrus.logutil sends to stderr — same bytes, different capture path.
+        with self.assertLogs("cyrus.rules", level="WARNING") as cm:
             # Pass alpha first — load_rules returns filename-sorted so alpha wins
             winner = evaluate([a, b], {"command": "anything"})
         self.assertEqual(winner.name, "alpha-block")
-        stderr = buf.getvalue()
-        self.assertIn("alpha-block", stderr)
-        self.assertIn("beta-block", stderr)
-        self.assertIn("tie", stderr.lower())
+        joined = "\n".join(cm.output).lower()
+        self.assertIn("alpha-block", joined)
+        self.assertIn("beta-block", joined)
+        self.assertIn("tie", joined)
 
     def test_no_match_returns_none(self):
         rule = self._make_rule("nomatch", "block", priority=10, pattern="xyzzy", anchored=True)
