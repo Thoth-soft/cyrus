@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-04-14
+
+### Fixed
+
+- **Rule default `anchored: true` silently broke newly-created rules.** The
+  rule engine evaluates the pattern against the JSON-flattened `tool_input`
+  (e.g. `{"command":"rm -rf /"}`), so an anchored `^pattern$` almost never
+  matches. Users creating a rule via `sekha_add_rule` or `sekha add-rule`
+  without explicitly setting `anchored: false` would get a rule file that
+  passed validation but never blocked. Every shipped example rule had to set
+  `anchored: false` to work around this. **Fix:** default `anchored` to
+  `false` in `_parse_rule_file`. Existing rules that explicitly opt in with
+  `anchored: true` keep current behavior. See `test_default_matches_substring`
+  in `tests/test_rules.py` for the regression coverage.
+
 ### Changed
 
 - **README + Threat Model clarified** -- split "what Sekha enforces" into
@@ -16,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     remain prompt-level and the AI can ignore them.
 - Previous phrasing implied all rule classes were hard-enforced. That was
   inaccurate and is now corrected.
+- README opening rewritten memory-first: primary value is persistent memory
+  across sessions; tool-pattern blocking is the differentiator (moat).
+- Added cross-session memory demo GIF (`docs/demo-memory.gif`, 1.3 MB,
+  native 1912x1028 resolution).
 
 ### Removed
 
@@ -58,4 +77,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Zero runtime dependencies enforced in `pyproject.toml`.
 - TDD throughout -- tests written before implementation for every behavior.
 
+[0.1.1]: https://github.com/Thoth-soft/sekha/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Thoth-soft/sekha/releases/tag/v0.1.0

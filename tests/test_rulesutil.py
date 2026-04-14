@@ -215,7 +215,8 @@ class TestParseRuleFile(unittest.TestCase):
             )
             rule = _parse_rule_file(p)
         self.assertEqual(rule.priority, 0)
-        self.assertTrue(rule.anchored)
+        # anchored defaults to False in v0.1.1+ — see _parse_rule_file comment.
+        self.assertFalse(rule.anchored)
         self.assertIn("Default rule body", rule.message)
 
 

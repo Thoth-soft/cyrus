@@ -99,7 +99,12 @@ def _parse_rule_file(path: Path) -> "Rule":
             f"invalid severity {severity!r} in {path} (must be block|warn)"
         )
 
-    anchored = bool(meta.get("anchored", True))
+    # anchored defaults to False in v0.1.1+: the hook matches the pattern
+    # against the JSON-flattened tool_input (e.g. '{"command":"rm -rf /"}'),
+    # so `^pattern$` almost never matches anything useful. Every shipped
+    # example rule had to explicitly set `anchored: false` to actually work.
+    # Rules that want strict start/end anchoring can still set `anchored: true`.
+    anchored = bool(meta.get("anchored", False))
     raw_pattern = str(meta["pattern"])
     try:
         compiled = _compile_rule_pattern(raw_pattern, anchored=anchored)

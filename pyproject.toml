@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sekha"
-version = "0.1.0"
+version = "0.1.1"
 description = "Zero-dependency AI memory system with hook-level rules enforcement for Claude Code"
 readme = "README.md"
 license = "MIT"

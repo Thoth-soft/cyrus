@@ -127,21 +127,22 @@ class TestWildcardAndScoping(_RulesTestBase):
 
 
 class TestAnchoring(_RulesTestBase):
-    """RULES-04: anchored-by-default regex, opt-out via anchored: false."""
+    """RULES-04: substring match by default (v0.1.1+), opt-in to anchoring."""
 
     def test_unanchored_fixture_matches_substring(self):
-        # block-rm-rf is anchored: false with pattern 'rm\s+-rf'
+        # block-rm-rf explicitly sets anchored: false with pattern 'rm\s+-rf'
         rules = load_rules(FIXTURES, "PreToolUse", "Bash")
         rule = next(r for r in rules if r.name == "block-rm-rf")
         winner = evaluate([rule], {"command": "rm -rf /tmp/x"})
         self.assertIsNotNone(winner)
         self.assertEqual(winner.name, "block-rm-rf")
 
-    def test_anchored_by_default_refuses_substring(self):
-        # Build a Rule with default anchoring (anchored=True implicit) via a
-        # tempdir — the fixtures are all anchored: false for substring work.
+    def test_default_matches_substring(self):
+        # In v0.1.1+ anchored defaults to False: a rule without an explicit
+        # `anchored` field behaves as substring match, which actually works
+        # against the JSON-flattened tool_input.
         with tempfile.TemporaryDirectory() as td:
-            p = Path(td) / "exact.md"
+            p = Path(td) / "default-anchor.md"
             p.write_text(
                 "---\n"
                 "severity: block\n"
@@ -150,13 +151,39 @@ class TestAnchoring(_RulesTestBase):
                 "pattern: 'rm -rf'\n"
                 "priority: 10\n"
                 "---\n"
-                "Only exact match.\n",
+                "Substring match should block this.\n",
                 encoding="utf-8",
             )
             rules = load_rules(Path(td), "PreToolUse", "Bash")
             self.assertEqual(len(rules), 1)
-            # Flattened JSON is '{"command": "sudo rm -rf /"}' which contains
-            # '"sudo rm -rf /"' — anchored ^rm -rf$ won't match that substring.
+            self.assertFalse(rules[0].anchored)
+            # Default (anchored: false) is a substring search — matches the
+            # 'rm -rf' inside the JSON-flattened tool_input.
+            winner = evaluate(rules, {"command": "sudo rm -rf /"})
+            self.assertIsNotNone(winner)
+
+    def test_explicit_anchored_refuses_substring(self):
+        # Rules that explicitly opt in to anchoring still get ^...$ semantics
+        # against the JSON blob — which makes them useless in practice, but
+        # the opt-in is preserved for backwards compatibility.
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "strict.md"
+            p.write_text(
+                "---\n"
+                "severity: block\n"
+                "triggers: [PreToolUse]\n"
+                "matches: [Bash]\n"
+                "pattern: 'rm -rf'\n"
+                "priority: 10\n"
+                "anchored: true\n"
+                "---\n"
+                "Only exact-line match.\n",
+                encoding="utf-8",
+            )
+            rules = load_rules(Path(td), "PreToolUse", "Bash")
+            self.assertEqual(len(rules), 1)
+            self.assertTrue(rules[0].anchored)
+            # Anchored ^rm -rf$ will not match '{"command":"sudo rm -rf /"}'.
             winner = evaluate(rules, {"command": "sudo rm -rf /"})
             self.assertIsNone(winner)
 
