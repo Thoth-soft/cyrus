@@ -17,6 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Previous phrasing implied all rule classes were hard-enforced. That was
   inaccurate and is now corrected.
 
+### Removed
+
+- **`examples/rules/warn-no-assumptions.md`** -- removed from the example set.
+  The rule fires on every tool call (`pattern: .*`, `matches: *`) which turned
+  out to be noise rather than enforcement. Broad warn-severity rules lose
+  their signal value after a few tool calls (AI tunes out repeated identical
+  context). Narrow-scope warn rules or block-severity rules on specific
+  patterns are the recommended approach. Lesson documented in threat model.
+
 ## [0.1.0] - 2026-04-12
 
 ### Added

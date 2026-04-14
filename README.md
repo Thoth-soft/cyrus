@@ -76,7 +76,6 @@ See [`examples/rules/`](examples/rules/) for copy-paste-ready rules:
 - `block-force-push-main.md` -- no `git push --force` against `main`/`master`.
 - `block-drop-table.md` -- refuse `DROP TABLE` in Bash-invoked SQL.
 - `warn-no-tests-before-commit.md` -- nudge before `git commit` without tests.
-- `warn-no-assumptions.md` -- anti-hallucination reminder on every tool call: explain before acting, no guessing, no assumptions.
 
 Each example is a single-purpose rule with inline commentary explaining how to
 tighten or loosen the pattern.
