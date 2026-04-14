@@ -172,10 +172,13 @@ everywhere MCP works.
 
 ## Docs
 
+- [Architecture](docs/architecture.md) -- three-process design, data flows,
+  performance budget, invariants. Read before contributing.
 - [Integration test runbook](docs/hook-integration-test.md) -- verify the hook
   blocks on your machine, end to end.
 - [CHANGELOG](CHANGELOG.md) -- version history.
 - [Release runbook](docs/release.md) -- how maintainers cut a version.
+- [v1.1 roadmap](docs/roadmap-v1.1.md) -- what's planned after v0.1.x.
 
 ## Contributing
 
